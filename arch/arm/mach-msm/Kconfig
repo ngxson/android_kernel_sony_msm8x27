@@ -2588,6 +2588,7 @@ config MSM_HSIC_SYSMON_TEST
 	  This will create a debugfs file entry named "hsic_sysmon_test" which
 	  can be read and written to send character data to the sysmon port of
 	  the modem over USB.
+	  
 config FORCE_FAST_CHARGE
   bool "Force AC charge mode at will"
   default y
