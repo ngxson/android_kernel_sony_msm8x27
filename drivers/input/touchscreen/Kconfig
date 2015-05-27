@@ -182,6 +182,17 @@ config TOUCHSCREEN_CYTTSP_I2C
 	  To compile this driver as a module, choose M here: the
 	  module will be called cyttsp_i2c.
 
+config TOUCHSCREEN_SWEEP2WAKE
+        tristate "Sweep2Wake for CYTTSP_I2C based touchscreens"
+        depends on I2C
+        default n
+
+config TOUCHSCREEN_DOUBLETAP2WAKE
+        tristate "Doubletap2Wake for CYTTSP_I2C based touchscreens"
+        depends on TOUCHSCREEN_SWEEP2WAKE
+        default n
+
+
 config TOUCHSCREEN_CYTTSP_SPI
 	tristate "support SPI bus connection"
 	depends on TOUCHSCREEN_CYTTSP_CORE && SPI_MASTER
