@@ -342,8 +342,14 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
 	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
+	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
-	input_event(input, type, button->code, !!state);
+	int btncode = button->code;
+	if(btncode == 528) {
+		input_event(input, type, 766, !!state);
+	} else {
+		input_event(input, type, btncode, !!state);
+	}
 	input_sync(input);
 }
 
