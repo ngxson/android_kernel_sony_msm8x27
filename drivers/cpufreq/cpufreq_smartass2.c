@@ -24,15 +24,16 @@
  *
  */
 
-#include <linux/module.h>
 #include <linux/cpu.h>
 #include <linux/cpumask.h>
 #include <linux/cpufreq.h>
+#include <linux/module.h>
 #include <linux/sched.h>
 #include <linux/tick.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/moduleparam.h>
+#include <asm/cputime.h>
 #include <linux/earlysuspend.h>
 
 
@@ -43,8 +44,7 @@
  * towards the ideal frequency and slower after it has passed it. Similarly,
  * lowering the frequency towards the ideal frequency is faster than below it.
  */
-#define cputime64_sub(__a, __b) ((__a) - (__b))
-#define DEFAULT_AWAKE_IDEAL_FREQ 486000
+#define DEFAULT_AWAKE_IDEAL_FREQ 918000
 static unsigned int awake_ideal_freq;
 
 /*
@@ -61,7 +61,7 @@ static unsigned int sleep_ideal_freq;
  * Zero disables and causes to always jump straight to max frequency.
  * When below the ideal freqeuncy we always ramp up to the ideal freq.
  */
-#define DEFAULT_RAMP_UP_STEP 108000
+#define DEFAULT_RAMP_UP_STEP 224000
 static unsigned int ramp_up_step;
 
 /*
@@ -69,33 +69,33 @@ static unsigned int ramp_up_step;
  * Zero disables and will calculate ramp down according to load heuristic.
  * When above the ideal freqeuncy we always ramp down to the ideal freq.
  */
-#define DEFAULT_RAMP_DOWN_STEP 216000
+#define DEFAULT_RAMP_DOWN_STEP 192000
 static unsigned int ramp_down_step;
 
 /*
  * CPU freq will be increased if measured load > max_cpu_load;
  */
-#define DEFAULT_MAX_CPU_LOAD 90
+#define DEFAULT_MAX_CPU_LOAD 60
 static unsigned long max_cpu_load;
 
 /*
  * CPU freq will be decreased if measured load < min_cpu_load;
  */
-#define DEFAULT_MIN_CPU_LOAD 70
+#define DEFAULT_MIN_CPU_LOAD 40
 static unsigned long min_cpu_load;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp up.
  * Notice we ignore this when we are below the ideal frequency.
  */
-#define DEFAULT_UP_RATE_US 32768;
+#define DEFAULT_UP_RATE_US 35000;
 static unsigned long up_rate_us;
 
 /*
  * The minimum amount of time to spend at a frequency before we can ramp down.
  * Notice we ignore this when we are above the ideal frequency.
  */
-#define DEFAULT_DOWN_RATE_US 32768;
+#define DEFAULT_DOWN_RATE_US 75000;
 static unsigned long down_rate_us;
 
 /*
@@ -223,7 +223,7 @@ inline static int work_cpumask_test_and_clear(unsigned long cpu) {
 }
 
 inline static int target_freq(struct cpufreq_policy *policy, struct smartass_info_s *this_smartass,
-			      int new_freq, int old_freq, int prefered_relation) {
+                              int new_freq, int old_freq, int prefered_relation) {
 	int index, target;
 	struct cpufreq_frequency_table *table = this_smartass->freq_table;
 
@@ -242,13 +242,11 @@ inline static int target_freq(struct cpufreq_policy *policy, struct smartass_inf
 			// but there is no such frequency higher than the current, try also
 			// to ramp up to *at least* current + ramp_up_step.
 			if (new_freq > old_freq && prefered_relation==CPUFREQ_RELATION_H
-			    && !cpufreq_frequency_table_target(policy,table,new_freq,
-							       CPUFREQ_RELATION_L,&index))
+			    && !cpufreq_frequency_table_target(policy,table,new_freq, CPUFREQ_RELATION_L,&index))
 				target = table[index].frequency;
 			// simlarly for ramping down:
 			else if (new_freq < old_freq && prefered_relation==CPUFREQ_RELATION_L
-				&& !cpufreq_frequency_table_target(policy,table,new_freq,
-								   CPUFREQ_RELATION_H,&index))
+				&& !cpufreq_frequency_table_target(policy,table,new_freq, CPUFREQ_RELATION_H,&index))
 				target = table[index].frequency;
 		}
 
@@ -289,8 +287,8 @@ static void cpufreq_smartass_timer(unsigned long cpu)
 	if (this_smartass->idle_exit_time == 0 || update_time == this_smartass->idle_exit_time)
 		return;
 
-	delta_idle = cputime64_sub(now_idle, this_smartass->time_in_idle);
-	delta_time = cputime64_sub(update_time, this_smartass->idle_exit_time);
+	delta_idle = now_idle - this_smartass->time_in_idle;
+	delta_time = update_time - this_smartass->idle_exit_time;
 
 	// If timer ran less than 1ms after short-term sample started, retry.
 	if (delta_time < 1000) {
@@ -317,7 +315,7 @@ static void cpufreq_smartass_timer(unsigned long cpu)
 	{
 		if (old_freq < policy->max &&
 			 (old_freq < this_smartass->ideal_speed || delta_idle == 0 ||
-			  cputime64_sub(update_time, this_smartass->freq_change_time) >= up_rate_us))
+			  (update_time - this_smartass->freq_change_time) >= up_rate_us))
 		{
 			dprintk(SMARTASS_DEBUG_ALG,"smartassT @ %d ramp up: load %d (delta_idle %llu)\n",
 				old_freq,cpu_load,delta_idle);
@@ -332,7 +330,7 @@ static void cpufreq_smartass_timer(unsigned long cpu)
 	// frequency we require that we have been at this frequency for at least down_rate_us:
 	else if (cpu_load < min_cpu_load && old_freq > policy->min &&
 		 (old_freq > this_smartass->ideal_speed ||
-		  cputime64_sub(update_time, this_smartass->freq_change_time) >= down_rate_us))
+		  (update_time - this_smartass->freq_change_time) >= down_rate_us))
 	{
 		dprintk(SMARTASS_DEBUG_ALG,"smartassT @ %d ramp down: load %d (delta_idle %llu)\n",
 			old_freq,cpu_load,delta_idle);
@@ -660,7 +658,7 @@ static struct attribute * smartass_attributes[] = {
 
 static struct attribute_group smartass_attr_group = {
 	.attrs = smartass_attributes,
-	.name = "smartass",
+	.name = "smartassV2",
 };
 
 static int cpufreq_governor_smartass(struct cpufreq_policy *new_policy,
@@ -867,3 +865,6 @@ module_exit(cpufreq_smartass_exit);
 MODULE_AUTHOR ("Erasmux");
 MODULE_DESCRIPTION ("'cpufreq_smartass2' - A smart cpufreq governor");
 MODULE_LICENSE ("GPL");
+
+
+
