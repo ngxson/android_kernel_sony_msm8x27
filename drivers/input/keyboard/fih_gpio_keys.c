@@ -26,6 +26,7 @@
 #include <linux/workqueue.h>
 #include <linux/gpio.h>
 #include <linux/development_tool.h>
+#include <linux/syscalls.h>
 
 struct wakeup_data
 {
@@ -344,12 +345,7 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
 	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
-	int btncode = button->code;
-	if(btncode == 528) {
-		input_event(input, type, 766, !!state);
-	} else {
-		input_event(input, type, btncode, !!state);
-	}
+	input_event(input, type, button->code, !!state);
 	input_sync(input);
 }
 
