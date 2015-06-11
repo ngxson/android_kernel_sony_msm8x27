@@ -194,8 +194,7 @@ static void msm_fb_set_bl_brightness(struct led_classdev *led_cdev,
 
 	#ifndef CONFIG_FB_BACKLIGHT
 //nui brightness settings
-if (nbr_switch == 0) {
-	char bkl_lut[MAX_BACKLIGHT_BRIGHTNESS + 1] = {
+	char bkl_lut_zero[MAX_BACKLIGHT_BRIGHTNESS + 1] = {
 		0, 27, 27, 27, 27, 27, 27, 27, 27, 27,
 		27, 27, 27, 27, 27, 27, 27, 27, 27, 27,
 		27, 27, 27, 27, 27, 28, 28, 28, 28, 28,
@@ -223,8 +222,7 @@ if (nbr_switch == 0) {
 		214, 216, 218, 220, 224, 226, 228, 231, 232, 236,
 		239, 241, 243, 247, 250, 255
 	};
-} else if(nbr_switch == 1) {
-	char bkl_lut[MAX_BACKLIGHT_BRIGHTNESS + 1] = {
+	char bkl_lut_one[MAX_BACKLIGHT_BRIGHTNESS + 1] = {
 		0, 1, 1, 2, 2, 3, 3, 4, 4, 5,
 		5, 6, 6, 7, 7, 7, 7, 7, 7, 7,
 		7, 8, 8, 9, 10, 11, 12, 13, 13, 13,
@@ -252,8 +250,7 @@ if (nbr_switch == 0) {
 		214, 216, 218, 220, 224, 226, 228, 231, 232, 236,
 		239, 241, 243, 247, 250, 255
 	};
-} else {
-	char bkl_lut[MAX_BACKLIGHT_BRIGHTNESS + 1] = {
+	char bkl_lut_two[MAX_BACKLIGHT_BRIGHTNESS + 1] = {
 		0, 1, 1, 2, 2, 3, 3, 4, 4, 4,
 		4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
 		6, 6, 6, 6, 6, 7, 7, 7, 7, 7,
@@ -281,9 +278,14 @@ if (nbr_switch == 0) {
 		214, 216, 218, 220, 224, 226, 228, 231, 232, 236,
 		239, 241, 243, 247, 250, 255
 	};
+bl_lvl = bkl_lut_one[value];
+if (nbr_switch == 0) {
+	bl_lvl = bkl_lut_zero[value];
+} else if(nbr_switch == 1) {
+	bl_lvl = bkl_lut_one[value];
+} else {
+	bl_lvl = bkl_lut_two[value];
 }
-
-	bl_lvl = bkl_lut[value];
 
 	if(bl_lvl > MAX_BACKLIGHT_BRIGHTNESS){
 		bl_lvl = MAX_BACKLIGHT_BRIGHTNESS;
