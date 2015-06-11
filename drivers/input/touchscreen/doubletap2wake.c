@@ -56,7 +56,6 @@
 /* Resources */
 static struct wake_lock dt2w_wake_lock;
 int dt2w_switch = 0;
-int nbr_switch = 1;
 bool scr_suspended = false;
 bool touchdown = false;
 static bool touch_x_called = false, touch_y_called = false;
@@ -258,12 +257,12 @@ static struct input_handler dt2w_input_handler = {
 #ifdef CONFIG_POWERSUSPEND
 static void dt2w_power_suspend(struct power_suspend *h) {
 	scr_suspended = true;
-	//printk("ngxson: debug POWERSUSPEND pwr off");
+	printk("ngxson: debug POWERSUSPEND pwr off");
 }
 
 static void dt2w_power_resume(struct power_suspend *h) {
 	scr_suspended = false;
-	//printk("ngxson: debug POWERSUSPEND pwr on");
+	printk("ngxson: debug POWERSUSPEND pwr on");
 }
 
 static struct power_suspend dt2w_power_suspend_handler = {
@@ -274,13 +273,13 @@ static struct power_suspend dt2w_power_suspend_handler = {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void dt2w_early_suspend(struct early_suspend *h) {
 	if(dt2w_switch > 0) wake_lock(&dt2w_wake_lock);
-	//printk("ngxson: debug EARLYSUSPEND pwr off");
+	printk("ngxson: debug EARLYSUSPEND pwr off");
 	scr_suspended = true;
 }
 
 static void dt2w_late_resume(struct early_suspend *h) {
 	if(dt2w_switch > 0) wake_unlock(&dt2w_wake_lock);
-	//printk("ngxson: debug EARLYSUSPEND pwr on");
+	printk("ngxson: debug EARLYSUSPEND pwr on");
 	scr_suspended = false;
 }
 
@@ -352,46 +351,6 @@ static ssize_t dt2w_version_dump(struct device *dev,
 static DEVICE_ATTR(doubletap2wake_version, (S_IWUSR|S_IRUGO),
 	dt2w_version_show, dt2w_version_dump);
 
-//brightness tool
-static ssize_t nui_brightness_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	size_t count = 0;
-
-	count += sprintf(buf, "%d\n", nbr_switch);
-
-	return count;
-}
-
-static ssize_t nui_brightness_dump(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t count)
-{
-	int value;
-
-	if (sysfs_streq(buf, "0"))
-		value = 0;
-	else if (sysfs_streq(buf, "1"))
-		value = 1;
-	else if (sysfs_streq(buf, "2"))
-		value = 2;
-	else
-		return -EINVAL;
-	if (dt2w_switch != value) {
-		// dt2w_switch is safe to be changed only when !scr_suspended
-		if (scr_suspended) {
-			doubletap2wake_pwrswitch();
-			msleep(400);
-		}
-		if (!scr_suspended) {
-			nbr_switch = value;
-		}
-	}
-	return count;
-}
-
-
-static DEVICE_ATTR(nuibrightness, (S_IWUSR|S_IRUGO),
-	nui_brightness_show, nui_brightness_dump);
 /*
  * INIT / EXIT stuff below here
  */
@@ -441,10 +400,6 @@ static int __init doubletap2wake_init(void)
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_doubletap2wake_version.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_version\n", __func__);
-    }
-    rc = sysfs_create_file(android_touch_kobj, &dev_attr_nuibrightness.attr);
-    if (rc) {
-        pr_warn("%s: sysfs_create_file failed for nuibrightness\n", __func__);
     }
 
 #ifdef CONFIG_POWERSUSPEND
