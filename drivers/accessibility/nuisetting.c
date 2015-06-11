@@ -22,8 +22,12 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/types.h>
+#include <linux/delay.h>
 #include <linux/init.h>
+#include <linux/err.h>
 #include <linux/slab.h>
+#include <linux/workqueue.h>
+#include <linux/input.h>
 #include <linux/nuisetting.h>
 
 #define DRIVER_AUTHOR "Nguyen Xuan Son <thichthat@gmail.com>"
