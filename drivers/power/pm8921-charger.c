@@ -2174,7 +2174,12 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 				if (rc >= 0)
 					val->intval = rc;
 			} else {
-				val->intval = chip->soc[SOC_SMOOTH];
+				printk("ngxson: battery level="+val->intval+"\n");
+				if(chip->soc[SOC_SMOOTH] == 0) {
+					val->intval = 1;
+				} else {
+					val->intval = chip->soc[SOC_SMOOTH];
+				}
 			}
 		}
 			
