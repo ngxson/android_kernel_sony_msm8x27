@@ -34,6 +34,7 @@
 #include <linux/mfd/pm8xxx/misc.h>
 #include <linux/mutex.h>
 #include <linux/jiffies.h>
+#include <linux/nuisetting.h>
 
 
 #include <mach/msm_xo.h>
@@ -2174,8 +2175,8 @@ static int pm_batt_power_get_property(struct power_supply *psy,
 				if (rc >= 0)
 					val->intval = rc;
 			} else {
-				printk("ngxson: battery level="+val->intval+"\n");
-				if(chip->soc[SOC_SMOOTH] == 0) {
+				//printk("ngxson: battery level=%d \n", chip->soc[SOC_SMOOTH]);
+				if((chip->soc[SOC_SMOOTH] == 0)&&(zero_precent_switch == 1)) {
 					val->intval = 1;
 				} else {
 					val->intval = chip->soc[SOC_SMOOTH];
