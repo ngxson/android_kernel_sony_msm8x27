@@ -36,6 +36,8 @@
 #define LOGTAG "[ngxson]: "
 
 int nbr_switch = 1;
+int cam_key_switch = 0;
+int zero_precent_switch = 0;
 
 /*
  * SYSFS stuff below here
@@ -71,6 +73,68 @@ static ssize_t nui_brightness_dump(struct device *dev,
 }
 static DEVICE_ATTR(nuibrightness, (S_IWUSR|S_IRUGO),
 	nui_brightness_show, nui_brightness_dump);
+
+//camera key setting
+static ssize_t nui_camerakey_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", cam_key_switch);
+
+	return count;
+}
+
+static ssize_t nui_camerakey_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else if (sysfs_streq(buf, "2"))
+		value = 2;
+	else
+		return -EINVAL;
+	if (cam_key_switch != value) {
+		cam_key_switch = value;
+	}
+	return count;
+}
+static DEVICE_ATTR(camerakey, (S_IWUSR|S_IRUGO),
+	nui_camerakey_show, nui_camerakey_dump);
+
+//Prevent 0% battery level
+static ssize_t nui_zeroprecent_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", zero_precent_switch);
+
+	return count;
+}
+
+static ssize_t nui_zeroprecent_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else
+		return -EINVAL;
+	if (zero_precent_switch != value) {
+		zero_precent_switch = value;
+	}
+	return count;
+}
+static DEVICE_ATTR(zeroprecent, (S_IWUSR|S_IRUGO),
+	nui_zeroprecent_show, nui_zeroprecent_dump);
 /*
  * INIT / EXIT stuff below here
  */
@@ -89,6 +153,14 @@ static int __init nuisetting_init(void)
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_nuibrightness.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for nuibrightness\n", __func__);
+    }
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camerakey.attr);
+    if (rc) {
+        pr_warn("%s: sysfs_create_file failed for camerakey\n", __func__);
+    }
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_zeroprecent.attr);
+    if (rc) {
+        pr_warn("%s: sysfs_create_file failed for zeroprecent\n", __func__);
     }
 	pr_info(LOGTAG"%s done\n", __func__);
 

@@ -27,6 +27,7 @@
 #include <linux/gpio.h>
 #include <linux/development_tool.h>
 #include <linux/syscalls.h>
+#include <linux/nuisetting.h>
 
 struct wakeup_data
 {
@@ -341,12 +342,39 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
+	int btncode = button->code;
 
 	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
 	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
-	input_event(input, type, button->code, !!state);
-	input_sync(input);
+	//766 focus key
+	//528 camera key
+	//87 power key
+	//65 pause/play key
+	if(cam_key_switch == 1) {
+		if(btncode == 528) {
+			pr_debug("ngxson: disable camera key");
+		} else if(btncode == 766) {
+			input_event(input, type, 87, !!state);
+			input_sync(input);
+		} else {
+			input_event(input, type, btncode, !!state);
+			input_sync(input);
+		}
+	} else if(cam_key_switch == 2) {
+		if(btncode == 528) {
+			pr_debug("ngxson: disable camera key");
+		} else if(btncode == 766) {
+			input_event(input, type, 65, !!state);
+			input_sync(input);
+		} else {
+			input_event(input, type, btncode, !!state);
+			input_sync(input);
+		}
+	} else {
+		input_event(input, type, btncode, !!state);
+		input_sync(input);
+	}
 }
 
 static void gpio_keys_work_func(struct work_struct *work)

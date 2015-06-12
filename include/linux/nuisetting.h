@@ -32,4 +32,19 @@
  */
 extern int nbr_switch;
 
+/*
+ * Camera key settings
+ * 0 for default action
+ * 1 for power button
+ * 2 for media pause/play button
+ */
+extern int cam_key_switch;
+
+/*
+ * Prevent 0% battery level settings
+ * 0 for disable
+ * 1 for enable
+ */
+extern int zero_precent_switch;
+
 #endif	/* _LINUX_NUISETTING_H */
