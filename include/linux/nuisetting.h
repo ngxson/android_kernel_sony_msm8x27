@@ -33,12 +33,11 @@
 extern int nbr_switch;
 
 /*
- * Camera key settings
- * 0 for default action
- * 1 for power button
- * 2 for media pause/play button
+ * Voltage level for short vibration (haptic, navkay, etc) setting
+ * 0 for disable
+ * 1 for enable
  */
-extern int cam_key_switch;
+extern int level_short_switch;
 
 /*
  * Prevent 0% battery level settings

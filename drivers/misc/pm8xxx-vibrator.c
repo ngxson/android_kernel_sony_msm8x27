@@ -19,6 +19,7 @@
 #include <linux/slab.h>
 #include <linux/mfd/pm8xxx/core.h>
 #include <linux/mfd/pm8xxx/vibrator.h>
+#include <linux/nuisetting.h>
 
 #include "../staging/android/timed_output.h"
 
@@ -49,6 +50,10 @@ static struct pm8xxx_vib *vib_dev;
 /*PERI-AH-VIBRATOR_Add_level_file_node-00+[ */
 int vib_Level;
 /*PERI-AH-VIBRATOR_Add_level_file_node-00+] */
+
+int vib_level_short;
+int vib_level_long;
+bool need_restore_level;
 
 int pm8xxx_vibrator_config(struct pm8xxx_vib_config *vib_config)
 {
@@ -134,6 +139,7 @@ static int pm8xxx_vib_set(struct pm8xxx_vib *vib, int on)
 		val = vib->reg_vib_drv;
 		val &= ~VIB_DRV_SEL_MASK;
 		rc = pm8xxx_vib_write_u8(vib, val, VIB_DRV);
+		if(need_restore_level) vib->level = vib_level_long;
 		if (rc < 0)
 			return rc;
 		vib->reg_vib_drv = val;
@@ -160,12 +166,25 @@ retry:
 	if (value == 0)
 		vib->state = 0;
 	else {
-		value = (value > vib->pdata->max_timeout_ms ?
+		if((level_short_switch==0)||(value>200)) {
+			need_restore_level = false;
+			value = (value > vib->pdata->max_timeout_ms ?
 				 vib->pdata->max_timeout_ms : value);
-		vib->state = 1;
-		hrtimer_start(&vib->vib_timer,
-			      ktime_set(value / 1000, (value % 1000) * 1000000),
+			vib->state = 1;
+			hrtimer_start(&vib->vib_timer,
+			ktime_set(value / 1000, (value % 1000) * 1000000),
 			      HRTIMER_MODE_REL);
+		} else {
+			need_restore_level = true;
+			vib->level = vib_level_short;
+			value = (value > vib->pdata->max_timeout_ms ?
+				 vib->pdata->max_timeout_ms : value);
+			vib->state = 1;
+			hrtimer_start(&vib->vib_timer,
+			ktime_set(value / 1000, (value % 1000) * 1000000),
+			      HRTIMER_MODE_REL);
+		}
+
 	}
 	spin_unlock_irqrestore(&vib->lock, flags);
 	schedule_work(&vib->work);
@@ -235,6 +254,7 @@ static ssize_t vib_level_store(struct device *dev,
 	}
 
 	vib->level = val;
+	vib_level_long  = val;
 
 	return strnlen(buf, count);
 }
@@ -242,12 +262,57 @@ static ssize_t vib_level_store(struct device *dev,
 static struct device_attribute dev_attr_level = {
 	.attr = {
 		 .name = "level",
-		 .mode = 0664,
+		 .mode = 0666,
 		 },
 	.show 	= vib_level_show,
 	.store 	= vib_level_store,
 };
 /*PERI-AH-VIBRATOR_Add_level_file_node-00+] */
+
+/* nui setting */
+static ssize_t vib_level_short_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	dev_info(dev, "vib_level_show %d.\n", vib_level_short);
+	return snprintf(buf, PAGE_SIZE, "%d\n", vib_level_short);
+}
+
+static ssize_t vib_level_short_store(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) {
+		pr_err("%s: error getting level\n", __func__);
+		return -EINVAL;
+	}
+
+	if (val < VIB_MIN_LEVEL_mV / 100) {
+		pr_err("%s: level %d not in range (%d - %d), using min.", __func__, val, VIB_MIN_LEVEL_mV / 100, VIB_MAX_LEVEL_mV / 100);
+		val = VIB_MIN_LEVEL_mV / 100;
+	} else if (val > VIB_MAX_LEVEL_mV / 100) {
+		pr_err("%s: level %d not in range (%d - %d), using max.", __func__, val, VIB_MIN_LEVEL_mV / 100, VIB_MAX_LEVEL_mV / 100);
+		val = VIB_MAX_LEVEL_mV / 100;
+	}
+
+	vib_level_short = val;
+
+	return strnlen(buf, count);
+}
+
+static struct device_attribute dev_attr_level_short = {
+	.attr = {
+		 .name = "level_short",
+		 .mode = 0666,
+		 },
+	.show 	= vib_level_short_show,
+	.store 	= vib_level_short_store,
+};
+/* end */
 
 #ifdef CONFIG_PM
 static int pm8xxx_vib_suspend(struct device *dev)
@@ -290,6 +355,9 @@ static int __devinit pm8xxx_vib_probe(struct platform_device *pdev)
 	vib->pdata	= pdata;
 	vib->level	= pdata->level_mV / 100;
 	vib->dev	= &pdev->dev;
+	vib_level_long  = vib->level;
+
+	vib_level_short = vib->level;
 
 	spin_lock_init(&vib->lock);
 	INIT_WORK(&vib->work, pm8xxx_vib_update);
@@ -328,6 +396,12 @@ static int __devinit pm8xxx_vib_probe(struct platform_device *pdev)
 		device_remove_file(vib->timed_dev.dev, &dev_attr_level);
 	}
 	/*PERI-AH-VIBRATOR_Add_level_file_node-00+[ */
+
+	rc = device_create_file(vib->timed_dev.dev, &dev_attr_level_short);	
+	if (rc) {
+		dev_err(&pdev->dev, "dev_attr_level_short device_create_file failed\n");
+		device_remove_file(vib->timed_dev.dev, &dev_attr_level_short);
+	}
 
 	#ifdef INIT_VIB_ENABLE
 	pm8xxx_vib_enable(&vib->timed_dev, pdata->initial_vibrate_ms);

@@ -36,7 +36,7 @@
 #define LOGTAG "[ngxson]: "
 
 int nbr_switch = 1;
-int cam_key_switch = 0;
+int level_short_switch = 0;
 int zero_precent_switch = 0;
 
 /*
@@ -75,17 +75,17 @@ static DEVICE_ATTR(nuibrightness, (S_IWUSR|S_IRUGO),
 	nui_brightness_show, nui_brightness_dump);
 
 //camera key setting
-static ssize_t nui_camerakey_show(struct device *dev,
+static ssize_t nui_level_short_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	size_t count = 0;
 
-	count += sprintf(buf, "%d\n", cam_key_switch);
+	count += sprintf(buf, "%d\n", level_short_switch);
 
 	return count;
 }
 
-static ssize_t nui_camerakey_dump(struct device *dev,
+static ssize_t nui_level_short_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	int value;
@@ -98,13 +98,13 @@ static ssize_t nui_camerakey_dump(struct device *dev,
 		value = 2;
 	else
 		return -EINVAL;
-	if (cam_key_switch != value) {
-		cam_key_switch = value;
+	if (level_short_switch != value) {
+		level_short_switch = value;
 	}
 	return count;
 }
-static DEVICE_ATTR(camerakey, (S_IWUSR|S_IRUGO),
-	nui_camerakey_show, nui_camerakey_dump);
+static DEVICE_ATTR(level_short, (S_IWUSR|S_IRUGO),
+	nui_level_short_show, nui_level_short_dump);
 
 //Prevent 0% battery level
 static ssize_t nui_zeroprecent_show(struct device *dev,
@@ -154,9 +154,9 @@ static int __init nuisetting_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for nuibrightness\n", __func__);
     }
-    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camerakey.attr);
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_level_short.attr);
     if (rc) {
-        pr_warn("%s: sysfs_create_file failed for camerakey\n", __func__);
+        pr_warn("%s: sysfs_create_file failed for level_short\n", __func__);
     }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_zeroprecent.attr);
     if (rc) {
