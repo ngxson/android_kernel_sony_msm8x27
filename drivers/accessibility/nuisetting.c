@@ -38,6 +38,7 @@
 int nbr_switch = 1;
 int level_short_switch = 0;
 int zero_precent_switch = 0;
+int nui_batt_level = 100;
 
 /*
  * SYSFS stuff below here

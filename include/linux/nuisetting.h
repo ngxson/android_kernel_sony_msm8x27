@@ -24,6 +24,8 @@
 #ifndef _LINUX_NUISETTING_H
 #define _LINUX_NUISETTING_H
 
+extern int nui_batt_level;
+
 /*
  * Nui brightness settings
  * 0 for stock value
