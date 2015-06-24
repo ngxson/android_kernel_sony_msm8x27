@@ -75,6 +75,25 @@
 #define NO_SLEEP_OFF (0 << 3)
 #define NO_SLEEP_ON (1 << 3)
 
+//ngxson_dt2w
+#include <linux/hrtimer.h>
+#include <asm-generic/cputime.h>
+
+#define D2W_PWRKEY_DUR 60
+#define D2W_FEATHER    50
+#define D2W_TIME       700
+
+int d2w_switch = 1;
+
+static cputime64_t tap_time_pre = 0;
+static int x_pre = 0, y_pre = 0;
+static bool touch_cnt = true;
+bool scr_suspended = false;
+
+static struct input_dev * doubletap2wake_pwrdev;
+static DEFINE_MUTEX(pwrkeyworklock);
+//end
+
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
 		unsigned short addr, unsigned char *data,
 		unsigned short length);
@@ -323,6 +342,64 @@ static bool exp_fn_inited;
 static struct mutex exp_fn_list_mutex;
 static struct list_head exp_fn_list;
 
+//ngxson_dt2w
+static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
+	if (!mutex_trylock(&pwrkeyworklock))
+		return;
+	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
+	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
+	msleep(D2W_PWRKEY_DUR);
+	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
+	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
+	msleep(D2W_PWRKEY_DUR);
+	mutex_unlock(&pwrkeyworklock);
+	return;
+}
+static DECLARE_WORK(doubletap2wake_presspwr_work, doubletap2wake_presspwr);
+
+/* PowerKey trigger */
+static void doubletap2wake_pwrtrigger(void) {
+	schedule_work(&doubletap2wake_presspwr_work);
+	return;
+}
+
+void doubletap2wake_reset(void) {
+	tap_time_pre = 0;
+	x_pre = 0;
+	y_pre = 0;
+	touch_cnt = false;
+}
+
+static inline unsigned int calc_feather(int coord, int prev_coord) {
+	return abs(coord - prev_coord);
+}
+
+static inline void new_touch(int x, int y) {
+	tap_time_pre = ktime_to_ms(ktime_get());
+	x_pre = x;
+	y_pre = y;
+}
+
+static bool detect_doubletap2wake(int x, int y)
+{
+	printk("")
+	if (touch_cnt == false) {
+		new_touch(x, y);
+	} else {
+		if ((calc_feather(x, x_pre) < D2W_FEATHER) &&
+				(calc_feather(y, y_pre) < D2W_FEATHER) &&
+				(((ktime_to_ms(ktime_get()))-tap_time_pre) < D2W_TIME)) {
+			doubletap2wake_reset();
+			return true;
+		} else {
+			doubletap2wake_reset();
+			new_touch(x, y);
+		}
+	}
+	return false;
+} //detect_doubletap2wake
+//end
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -551,8 +628,13 @@ static void synaptics_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 			if( show_log )
 			{
 				touch_info->status	= !touch_info->status;
-				if((state_down) && (finger<1)) touchdown = true;
-				pr_debug( "ITUCH : <%d>(%s)[%d(%d):%d(%d)]-%u\n", finger, state_down ? "down" : "up", touch_info->x, touch_info->wx, touch_info->y, touch_info->wy, touch_info->count );
+				if((state_down) && (finger<1) && (scr_suspended) && (dt2w_switch == 1)) {
+					if (detect_doubletap2wake(touch_info->wx), touch_info->wy)) == true) {
+						pr_info("%s: d2w: power on\n", __func__);
+						doubletap2wake_pwrtrigger();
+					}
+				}
+				printk( "ITUCH : <%d>(%s)[%d(%d):%d(%d)]-%u\n", finger, state_down ? "down" : "up", touch_info->x, touch_info->wx, touch_info->y, touch_info->wy, touch_info->count );
 			}
 
 			if( state_up )
@@ -1233,6 +1315,7 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 {
 	int retval = 0;
 	unsigned char intr_status;
+	unsigned int irq_flags;
 	const struct synaptics_dsx_platform_data *platform_data =
 			rmi4_data->i2c_client->dev.platform_data;
 
@@ -1248,8 +1331,15 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 		if (retval < 0)
 			return retval;
 
+		irq_flags = platform_data->irq_type;
+		
+		//ngxson_dt2w
+		if(dt2w_switch == 1)
+			irq_flags = irq_flags | IRQF_NO_SUSPEND;
+		//end
+		
 		retval = request_threaded_irq(rmi4_data->irq, NULL,
-				synaptics_rmi4_irq, platform_data->irq_type,
+				synaptics_rmi4_irq, irq_flags,
 				DRIVER_NAME, rmi4_data);
 		if (retval < 0) {
 			printk( "ITUCH : Device(%s), Failed to create irq thread\n", dev_name( &rmi4_data->i2c_client->dev ) );
@@ -2136,6 +2226,15 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 		printk( "ITUCH : Device(%s), Failed to register input device\n", dev_name( &client->dev ) );
 		goto err_register_input;
 	}
+	
+//ngxson_dt2w
+	retval = input_register_device(doubletap2wake_pwrdev);
+	if (retval < 0) {
+		pr_err("%s: Error, failed to register input device r=%d\n",
+			dev_name( &client->dev ), retval);
+		goto err_register_input;
+	}
+//end
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	rmi4_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
@@ -2221,6 +2320,7 @@ err_query_device:
 err_regulator:
 */
 	input_free_device(rmi4_data->input_dev);
+	input_free_device(doubletap2wake_pwrdev);
 	rmi4_data->input_dev = NULL;
 
 err_input_device:
@@ -2387,20 +2487,27 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 			container_of(h, struct synaptics_rmi4_data,
 			early_suspend);
 
-printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
-if ((dt2w_switch > 0)) {
-	printk( "ngxson: debug dt2w on\n");
-	synaptics_rmi4_irq_enable(rmi4_data, true);
-} else {
-	ngxson_touch_slept = true;
-	rmi4_data->touch_stopped = true;
-	wake_up(&rmi4_data->wait);
-	synaptics_rmi4_irq_enable(rmi4_data, false);
-	synaptics_rmi4_sensor_sleep(rmi4_data);
-
-	if (rmi4_data->full_pm_cycle)
-		synaptics_rmi4_suspend(&(rmi4_data->input_dev->dev));
-}
+	//printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
+	if ((dt2w_switch > 0)) {
+		printk( "ngxson: debug dt2w on\n");
+		if (rmi4_data->full_pm_cycle)
+			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
+	
+		if (rmi4_data->sensor_sleep == true) {
+			synaptics_rmi4_sensor_wake(rmi4_data);
+			rmi4_data->touch_stopped = false;
+			synaptics_rmi4_irq_enable(rmi4_data, true);
+		}
+	} else {
+		ngxson_touch_slept = true;
+		rmi4_data->touch_stopped = true;
+		wake_up(&rmi4_data->wait);
+		synaptics_rmi4_irq_enable(rmi4_data, false);
+		synaptics_rmi4_sensor_sleep(rmi4_data);
+	
+		if (rmi4_data->full_pm_cycle)
+			synaptics_rmi4_suspend(&(rmi4_data->input_dev->dev));
+	}
 	return;
 }
 
@@ -2419,20 +2526,20 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 			container_of(h, struct synaptics_rmi4_data,
 			early_suspend);
 
-printk( "ngxson: debug synaptics_rmi4_late_resume\n");
-if ((dt2w_switch > 0) && (!ngxson_touch_slept)) {
-	printk( "ngxson: debug dt2w on\n");
-} else {
-	ngxson_touch_slept = false;
-	if (rmi4_data->full_pm_cycle)
-		synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
-
-	if (rmi4_data->sensor_sleep == true) {
-		synaptics_rmi4_sensor_wake(rmi4_data);
-		rmi4_data->touch_stopped = false;
-		synaptics_rmi4_irq_enable(rmi4_data, true);
+	//printk( "ngxson: debug synaptics_rmi4_late_resume\n");
+	if ((dt2w_switch > 0) && (!ngxson_touch_slept)) {
+		printk( "ngxson: debug dt2w on\n");
+	} else {
+		ngxson_touch_slept = false;
+		if (rmi4_data->full_pm_cycle)
+			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
+	
+		if (rmi4_data->sensor_sleep == true) {
+			synaptics_rmi4_sensor_wake(rmi4_data);
+			rmi4_data->touch_stopped = false;
+			synaptics_rmi4_irq_enable(rmi4_data, true);
+		}
 	}
-}
 	return;
 }
 #endif
@@ -2452,8 +2559,6 @@ static int synaptics_rmi4_suspend(struct device *dev)
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
 	const struct synaptics_dsx_platform_data *platform_data =
 			rmi4_data->board;
-
-printk( "ngxson: debug synaptics_rmi4_suspend\n");
 
 	if (!rmi4_data->sensor_sleep) {
 		rmi4_data->touch_stopped = true;
@@ -2483,8 +2588,6 @@ static int synaptics_rmi4_resume(struct device *dev)
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
 	const struct synaptics_dsx_platform_data *platform_data =
 			rmi4_data->board;
-
-printk( "ngxson: debug synaptics_rmi4_resume\n");
 
 	if (platform_data->regulator_en)
 		regulator_enable(rmi4_data->regulator);
@@ -2536,6 +2639,16 @@ static struct i2c_driver synaptics_rmi4_driver = {
  */
 static int __init synaptics_rmi4_init(void)
 {
+	//ngxson_dt2w
+	doubletap2wake_pwrdev = input_allocate_device();
+	if (!doubletap2wake_pwrdev) {
+		pr_err("Can't allocate suspend autotest power button\n");
+		goto error_init;
+	}
+	doubletap2wake_pwrdev->name = "dt2w_pwrkey";
+	doubletap2wake_pwrdev->phys = "dt2w_pwrkey/input0";
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_POWER);
+	//end
 	return i2c_add_driver(&synaptics_rmi4_driver);
 }
 
