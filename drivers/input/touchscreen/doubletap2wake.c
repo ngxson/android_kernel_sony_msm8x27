@@ -51,13 +51,40 @@
 int dt2w_switch = 0;
 bool scr_suspended = false;
 
+/* Read cmdline for dt2w */
+static int __init read_dt2w_cmdline(char *dt2w)
+{
+if (strcmp(dt2w, "1") == 0) {
+printk("[cmdline_dt2w]: DoubleTap2Wake enabled. \
+| dt2w='%s'\n", dt2w);
+dt2w_switch = 1;
+} else if (strcmp(dt2w, "2") == 0) {
+printk("[cmdline_dt2w]: DoubleTap2Wake enabled. \
+| dt2w='%s'\n", dt2w);
+dt2w_switch = 2;
+} else if (strcmp(dt2w, "0") == 0) {
+printk("[cmdline_dt2w]: DoubleTap2Wake disabled. \
+| dt2w='%s'\n", dt2w);
+dt2w_switch = 0;
+} else {
+printk("[cmdline_dt2w]: No valid input found. \
+Going with default: | dt2w='%u'\n", dt2w_switch);
+}
+return 0;
+}
+__setup("dt2w=", read_dt2w_cmdline);
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void dt2w_early_suspend(struct early_suspend *h) {
 	scr_suspended = true;
+	doubletap2wake_reset();
+	printk( "ngxson : dt2w_early_suspend\n");
 }
 
 static void dt2w_late_resume(struct early_suspend *h) {
 	scr_suspended = false;
+	doubletap2wake_reset();
+	printk( "ngxson : dt2w_late_resume\n");
 }
 
 static struct early_suspend dt2w_early_suspend_handler = {
@@ -89,14 +116,14 @@ static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 	else if (sysfs_streq(buf, "1"))
 		value = 1;
 	else if (sysfs_streq(buf, "2"))
-		value = 2;
+		value = 1;
 	else
 		return -EINVAL;
 	if (dt2w_switch != value) {
 		// dt2w_switch is safe to be changed only when !scr_suspended
 		if (scr_suspended) {
-			dt2w_reset();
-			doubletap2wake_pwrswitch();
+			//dt2w_reset();
+			//doubletap2wake_pwrswitch();
 			msleep(400);
 		}
 		if (!scr_suspended) {
@@ -154,8 +181,6 @@ static int __init doubletap2wake_init(void)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&dt2w_early_suspend_handler);
 #endif
-err_alloc_dev:
-	pr_info(LOGTAG"%s done\n", __func__);
 
 	return 0;
 }

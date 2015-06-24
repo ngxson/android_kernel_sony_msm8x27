@@ -23,6 +23,6 @@
 
 extern int dt2w_switch;
 extern bool scr_suspended;
-extern bool touchdown;
+void doubletap2wake_reset(void);
 
 #endif	/* _LINUX_DOUBLETAP2WAKE_H */

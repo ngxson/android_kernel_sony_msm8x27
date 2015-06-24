@@ -33,7 +33,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/input/synaptics_dsx.h>
 #include <linux/input/synaptics_dsx_rmi4_i2c.h>
-#include <linux/input/doubletap2wake.h>
 #ifdef KERNEL_ABOVE_2_6_38
 #include <linux/input/mt.h>
 #endif
@@ -78,17 +77,18 @@
 //ngxson_dt2w
 #include <linux/hrtimer.h>
 #include <asm-generic/cputime.h>
+#include <linux/input/doubletap2wake.h>
 
 #define D2W_PWRKEY_DUR 60
-#define D2W_FEATHER    50
 #define D2W_TIME       700
+#define DT2W_TIMEOUT_MAX         600
+#define DT2W_TIMEOUT_MIN         80
+#define DT2W_DELTA               180
 
 int d2w_switch = 1;
 
 static cputime64_t tap_time_pre = 0;
 static int x_pre = 0, y_pre = 0;
-static bool touch_cnt = true;
-bool scr_suspended = false;
 
 static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
@@ -346,6 +346,7 @@ static struct list_head exp_fn_list;
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
+	printk("ngxson: dt2w pwr press\n");
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(D2W_PWRKEY_DUR);
@@ -364,39 +365,36 @@ static void doubletap2wake_pwrtrigger(void) {
 }
 
 void doubletap2wake_reset(void) {
+	printk( "ngxson : dt2w doubletap2wake_reset\n");
 	tap_time_pre = 0;
 	x_pre = 0;
 	y_pre = 0;
-	touch_cnt = false;
 }
 
-static inline unsigned int calc_feather(int coord, int prev_coord) {
-	return abs(coord - prev_coord);
-}
-
-static inline void new_touch(int x, int y) {
-	tap_time_pre = ktime_to_ms(ktime_get());
-	x_pre = x;
-	y_pre = y;
-}
-
-static bool detect_doubletap2wake(int x, int y)
+static void detect_doubletap2wake(int x, int y)
 {
-	printk("")
-	if (touch_cnt == false) {
-		new_touch(x, y);
+	printk("[ngxson] [DT2W] dt2w x=%d y=%d\n", x, y);
+	if (tap_time_pre == 0) {
+		tap_time_pre = ktime_to_ms(ktime_get());
+		x_pre = x;
+		y_pre = y;
+	} else if (((ktime_to_ms(ktime_get()) - tap_time_pre) > DT2W_TIMEOUT_MAX) &&
+			((ktime_to_ms(ktime_get()) - tap_time_pre) < DT2W_TIMEOUT_MIN)) {
+		tap_time_pre = ktime_to_ms(ktime_get());
+		x_pre = x;
+		y_pre = y;
 	} else {
-		if ((calc_feather(x, x_pre) < D2W_FEATHER) &&
-				(calc_feather(y, y_pre) < D2W_FEATHER) &&
-				(((ktime_to_ms(ktime_get()))-tap_time_pre) < D2W_TIME)) {
+		if (((abs(x - x_pre) < DT2W_DELTA) && (abs(y - y_pre) < DT2W_DELTA))
+						|| (x_pre == 0 && y_pre == 0)) {
+			printk("[TP] [DT2W] dt2w ON\n");
 			doubletap2wake_reset();
-			return true;
+			doubletap2wake_pwrtrigger();
 		} else {
-			doubletap2wake_reset();
-			new_touch(x, y);
+			tap_time_pre = ktime_to_ms(ktime_get());
+			x_pre = x;
+			y_pre = y;
 		}
 	}
-	return false;
 } //detect_doubletap2wake
 //end
 
@@ -629,10 +627,7 @@ static void synaptics_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 			{
 				touch_info->status	= !touch_info->status;
 				if((state_down) && (finger<1) && (scr_suspended) && (dt2w_switch == 1)) {
-					if (detect_doubletap2wake(touch_info->wx), touch_info->wy)) == true) {
-						pr_info("%s: d2w: power on\n", __func__);
-						doubletap2wake_pwrtrigger();
-					}
+					detect_doubletap2wake((touch_info->x), (touch_info->y));
 				}
 				printk( "ITUCH : <%d>(%s)[%d(%d):%d(%d)]-%u\n", finger, state_down ? "down" : "up", touch_info->x, touch_info->wx, touch_info->y, touch_info->wy, touch_info->count );
 			}
@@ -2499,6 +2494,7 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 			synaptics_rmi4_irq_enable(rmi4_data, true);
 		}
 	} else {
+		printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
 		ngxson_touch_slept = true;
 		rmi4_data->touch_stopped = true;
 		wake_up(&rmi4_data->wait);
@@ -2530,6 +2526,7 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 	if ((dt2w_switch > 0) && (!ngxson_touch_slept)) {
 		printk( "ngxson: debug dt2w on\n");
 	} else {
+		printk( "ngxson: debug synaptics_rmi4_late_resume\n");
 		ngxson_touch_slept = false;
 		if (rmi4_data->full_pm_cycle)
 			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
@@ -2643,7 +2640,6 @@ static int __init synaptics_rmi4_init(void)
 	doubletap2wake_pwrdev = input_allocate_device();
 	if (!doubletap2wake_pwrdev) {
 		pr_err("Can't allocate suspend autotest power button\n");
-		goto error_init;
 	}
 	doubletap2wake_pwrdev->name = "dt2w_pwrkey";
 	doubletap2wake_pwrdev->phys = "dt2w_pwrkey/input0";
