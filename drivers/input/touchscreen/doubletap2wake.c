@@ -116,7 +116,7 @@ static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 	else if (sysfs_streq(buf, "1"))
 		value = 1;
 	else if (sysfs_streq(buf, "2"))
-		value = 1;
+		value = 2;
 	else
 		return -EINVAL;
 	if (dt2w_switch != value) {

@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 
 #include <asm/uaccess.h>
+#include <linux/input/doubletap2wake.h>
 
 // ==========================================================================================================================
 
@@ -2448,6 +2449,7 @@ void	enable_ic_irq( void *node_data, struct command_parameter *parameter )
 
 	tool_data->command_id	= COMMAND_ENABLE_IRQ;
 
+printk("ngxson: FIH enable_ic_irq\n");
 	if( rmi_set_irq( rmi_data, true ) )
 	{
 
@@ -2470,6 +2472,21 @@ void	disable_ic_irq( void *node_data, struct command_parameter *parameter )
 
 	struct synaptics_rmi4_data	*rmi_data = tool_data->rmi_data;
 
+printk("ngxson: FIH enable_ic_irq\n");
+if(dt2w_switch == 1) {
+	tool_data->command_id	= COMMAND_ENABLE_IRQ;
+
+	if( rmi_set_irq( rmi_data, true ) )
+	{
+
+		printk( "TTUCH : Set IRQ failed\n" );
+
+		create_return_structure( return_buffer, COMMAND_ENABLE_IRQ, ERROR_IRQ_CONTROL_FAILED, NULL, 0 );
+
+	}
+	else
+		create_return_structure( return_buffer, COMMAND_ENABLE_IRQ, ERROR_NONE, NULL, 0 );
+} else {
 	tool_data->command_id	= COMMAND_DISABLE_IRQ;
 
 	if( rmi_set_irq( rmi_data, false ) )
@@ -2482,6 +2499,7 @@ void	disable_ic_irq( void *node_data, struct command_parameter *parameter )
 	}
 	else
 		create_return_structure( return_buffer, COMMAND_DISABLE_IRQ, ERROR_NONE, NULL, 0 );
+}
 
 }
 
