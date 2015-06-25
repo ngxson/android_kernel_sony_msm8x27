@@ -84,7 +84,6 @@ static struct msm_bus_paths bw_level_tbl[] __initdata = {
 	[2] = BW_MBPS(1600), /* At least 200 MHz on bus. */
 	[3] = BW_MBPS(2128), /* At least 266 MHz on bus. */
 	[4] = BW_MBPS(3200), /* At least 400 MHz on bus. */
-	[5] = BW_MBPS(3600), /* At least 450 MHz on bus. */
 };
 
 static struct msm_bus_scale_pdata bus_scale_data __initdata = {
@@ -105,12 +104,8 @@ static struct l2_level l2_freq_tbl[] __initdata = {
 	[7]  = { {  756000, HFPLL, 1, 0x1C }, LVL_HIGH, 1150000, 4 },
 	[8]  = { {  810000, HFPLL, 1, 0x1E }, LVL_HIGH, 1150000, 4 },
 	[9]  = { {  864000, HFPLL, 1, 0x20 }, LVL_HIGH, 1150000, 4 },
-	[10] = { {  918000, HFPLL, 1, 0x22 }, LVL_HIGH, 1150000, 7 },
-	[11] = { {  972000, HFPLL, 1, 0x24 }, LVL_HIGH, 1150000, 7 },
-	[12] = { { 1026000, HFPLL, 1, 0x26 }, LVL_HIGH, 1150000, 7 },
-	[13] = { { 1080000, HFPLL, 1, 0x28 }, LVL_HIGH, 1150000, 7 },
-	[14] = { { 1134000, HFPLL, 1, 0x2A }, LVL_HIGH, 1150000, 7 },
-	[15] = { { 1188000, HFPLL, 1, 0x2C }, LVL_HIGH, 1150000, 7 },
+	[10] = { {  918000, HFPLL, 1, 0x22 }, LVL_HIGH, 1150000, 4 },
+	[11] = { {  972000, HFPLL, 1, 0x24 }, LVL_HIGH, 1150000, 4 },
 	{ }
 };
 
@@ -138,7 +133,7 @@ static struct acpu_level acpu_freq_tbl_slow[] __initdata = {
 	{ 1, {  1458000, HFPLL, 1, 0x36 }, L2(15), 1237500 },
 	{ 1, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1250000 },
 	{ 1, {  1620000, HFPLL, 1, 0x3C }, L2(15), 1300000 },
-    { 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1300000 },
+    	{ 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1300000 },
 	{ 0, { 0 } }
 };
 
@@ -166,7 +161,7 @@ static struct acpu_level acpu_freq_tbl_nom[] __initdata = {
 	{ 1, {  1458000, HFPLL, 1, 0x36 }, L2(15), 1187500 },
 	{ 1, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1200000 },
 	{ 1, {  1620000, HFPLL, 1, 0x3C }, L2(15), 1250000 },
-    { 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1250000 },
+    	{ 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1250000 },
 	{ 0, { 0 } }
 };
 
@@ -194,7 +189,7 @@ static struct acpu_level acpu_freq_tbl_fast[] __initdata = {
 	{ 1, {  1458000, HFPLL, 1, 0x36 }, L2(15), 1137500 },
 	{ 1, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1150000 },
 	{ 1, {  1620000, HFPLL, 1, 0x3C }, L2(15), 1200000 },
-    { 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1200000 },
+    	{ 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1200000 },
 	{ 0, { 0 } }
 };
 
