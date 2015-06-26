@@ -23,6 +23,7 @@
 
 extern int dt2w_switch;
 extern bool scr_suspended;
+extern int dt2w_vib;
 void doubletap2wake_reset(void);
 
 #endif	/* _LINUX_DOUBLETAP2WAKE_H */

@@ -49,28 +49,29 @@
 
 /* Resources */
 int dt2w_switch = 0;
+int dt2w_vib = 1;
 bool scr_suspended = false;
 
 /* Read cmdline for dt2w */
 static int __init read_dt2w_cmdline(char *dt2w)
 {
-if (strcmp(dt2w, "1") == 0) {
-printk("[cmdline_dt2w]: DoubleTap2Wake enabled. \
-| dt2w='%s'\n", dt2w);
-dt2w_switch = 1;
-} else if (strcmp(dt2w, "2") == 0) {
-printk("[cmdline_dt2w]: DoubleTap2Wake enabled. \
-| dt2w='%s'\n", dt2w);
-dt2w_switch = 2;
-} else if (strcmp(dt2w, "0") == 0) {
-printk("[cmdline_dt2w]: DoubleTap2Wake disabled. \
-| dt2w='%s'\n", dt2w);
-dt2w_switch = 0;
-} else {
-printk("[cmdline_dt2w]: No valid input found. \
-Going with default: | dt2w='%u'\n", dt2w_switch);
-}
-return 0;
+	if (strcmp(dt2w, "1") == 0) {
+		printk("[cmdline_dt2w]: DoubleTap2Wake enabled. \
+			| dt2w='%s'\n", dt2w);
+		dt2w_switch = 1;
+	} else if (strcmp(dt2w, "2") == 0) {
+		printk("[cmdline_dt2w]: DoubleTap2Wake enabled. \
+			| dt2w='%s'\n", dt2w);
+		dt2w_switch = 2;
+	} else if (strcmp(dt2w, "0") == 0) {
+		printk("[cmdline_dt2w]: DoubleTap2Wake disabled. \
+			| dt2w='%s'\n", dt2w);
+		dt2w_switch = 0;
+	} else {
+		printk("[cmdline_dt2w]: No valid input found. \
+			Going with default: | dt2w='%u'\n", dt2w_switch);
+	}
+	return 0;
 }
 __setup("dt2w=", read_dt2w_cmdline);
 
@@ -78,13 +79,13 @@ __setup("dt2w=", read_dt2w_cmdline);
 static void dt2w_early_suspend(struct early_suspend *h) {
 	scr_suspended = true;
 	doubletap2wake_reset();
-	printk( "ngxson : dt2w_early_suspend\n");
+	//printk( "ngxson : dt2w_early_suspend\n");
 }
 
 static void dt2w_late_resume(struct early_suspend *h) {
 	scr_suspended = false;
 	doubletap2wake_reset();
-	printk( "ngxson : dt2w_late_resume\n");
+	//printk( "ngxson : dt2w_late_resume\n");
 }
 
 static struct early_suspend dt2w_early_suspend_handler = {
@@ -136,6 +137,36 @@ static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 static DEVICE_ATTR(doubletap2wake, (S_IWUSR|S_IRUGO),
 	dt2w_doubletap2wake_show, dt2w_doubletap2wake_dump);
 
+static ssize_t doubletap2wake_vib_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", dt2w_vib);
+
+	return count;
+}
+
+static ssize_t doubletap2wake_vib_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else
+		return -EINVAL;
+	if (dt2w_vib != value) {
+		dt2w_vib = value;
+	}
+	return count;
+}
+
+static DEVICE_ATTR(doubletap2wake_vib, (S_IWUSR|S_IRUGO),
+	doubletap2wake_vib_show, doubletap2wake_vib_dump);
+
 static ssize_t dt2w_version_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -176,6 +207,10 @@ static int __init doubletap2wake_init(void)
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_doubletap2wake_version.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_version\n", __func__);
+    }
+    rc = sysfs_create_file(android_touch_kobj, &dev_attr_doubletap2wake_vib.attr);
+    if (rc) {
+        pr_warn("%s: sysfs_create_file failed for doubletap2wake_vib\n", __func__);
     }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND

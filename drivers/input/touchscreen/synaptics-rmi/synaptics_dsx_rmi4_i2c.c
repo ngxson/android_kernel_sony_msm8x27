@@ -79,6 +79,7 @@
 #include <linux/hrtimer.h>
 #include <asm-generic/cputime.h>
 #include <linux/input/doubletap2wake.h>
+#include <linux/mfd/pm8xxx/vibrator.h>
 
 #define D2W_PWRKEY_DUR 60
 #define DT2W_TIMEOUT_MAX         450
@@ -347,7 +348,7 @@ static struct list_head exp_fn_list;
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
-	printk("ngxson: dt2w pwr press\n");
+	if(dt2w_vib == 1) vibrate(70);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(D2W_PWRKEY_DUR);
@@ -1298,7 +1299,7 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 	struct synaptics_rmi4_data *rmi4_data = data;
 
 	do {
-		if((dt2w_switch > 0)&&(scr_suspended)) wake_lock_timeout(&dt2w_wake_lock, 800);
+		if((dt2w_switch > 0)&&(scr_suspended)) wake_lock_timeout(&dt2w_wake_lock, 500);
 		touch_count = synaptics_rmi4_sensor_report(rmi4_data);
 
 		if (touch_count > 0) {
@@ -2509,7 +2510,7 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 	//printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
 	if ((dt2w_switch > 0)) {
 		enable_irq_wake(rmi4_data->irq);
-		printk( "ngxson: debug dt2w on\n");
+		//printk( "ngxson: debug dt2w on\n");
 		if (rmi4_data->full_pm_cycle)
 			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
 	
@@ -2519,7 +2520,7 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 			synaptics_rmi4_irq_enable(rmi4_data, true);
 		}
 	} else {
-		printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
+		//printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
 		ngxson_touch_slept = true;
 		rmi4_data->touch_stopped = true;
 		wake_up(&rmi4_data->wait);
@@ -2549,10 +2550,10 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 
 	//printk( "ngxson: debug synaptics_rmi4_late_resume\n");
 	if ((dt2w_switch > 0) && (!ngxson_touch_slept)) {
-		printk( "ngxson: debug dt2w on\n");
+		//printk( "ngxson: debug dt2w on\n");
 		disable_irq_wake(rmi4_data->irq);
 	} else {
-		printk( "ngxson: debug synaptics_rmi4_late_resume\n");
+		//printk( "ngxson: debug synaptics_rmi4_late_resume\n");
 		ngxson_touch_slept = false;
 		if (rmi4_data->full_pm_cycle)
 			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));

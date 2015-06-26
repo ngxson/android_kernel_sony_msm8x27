@@ -75,7 +75,7 @@ static ssize_t nui_brightness_dump(struct device *dev,
 static DEVICE_ATTR(nuibrightness, (S_IWUSR|S_IRUGO),
 	nui_brightness_show, nui_brightness_dump);
 
-//camera key setting
+//short vibration setting
 static ssize_t nui_level_short_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {

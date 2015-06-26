@@ -30,7 +30,7 @@
 #define VIB_DRV_EN_MANUAL_MASK	0xfc
 #define VIB_DRV_LOGIC_SHIFT	0x2
 
-#define VIB_MAX_LEVEL_mV	3100
+#define VIB_MAX_LEVEL_mV	3200
 #define VIB_MIN_LEVEL_mV	1200
 
 struct pm8xxx_vib {
@@ -196,6 +196,12 @@ static void pm8xxx_vib_update(struct work_struct *work)
 					 work);
 
 	pm8xxx_vib_set(vib, vib->state);
+}
+
+int vibrate(int time)
+{
+	pm8xxx_vib_enable(&vib_dev->timed_dev, time);
+	return 0;
 }
 
 static int pm8xxx_vib_get_time(struct timed_output_dev *dev)
