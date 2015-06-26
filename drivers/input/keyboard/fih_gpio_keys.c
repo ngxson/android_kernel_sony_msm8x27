@@ -27,6 +27,9 @@
 #include <linux/gpio.h>
 #include <linux/development_tool.h>
 #include <linux/syscalls.h>
+#include <linux/hrtimer.h>
+#include <asm-generic/cputime.h>
+#include <../../video/msm/msm_fb.h>
 
 struct wakeup_data
 {
@@ -334,18 +337,33 @@ static struct attribute *gpio_keys_attrs[] = {
 static struct attribute_group gpio_keys_attr_group = {
 	.attrs = gpio_keys_attrs,
 };
+static bool pressed_vol_up = false;
 
 static void gpio_keys_report_event(struct gpio_button_data *bdata)
 {
 	struct gpio_keys_button *button = bdata->button;
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
+	int btn_code = button->code;
+	cputime64_t time_now = ktime_to_ms(ktime_get());
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
 	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
 	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
-	input_event(input, type, button->code, !!state);
+	// Hold vol up and then press focus once to force brghtness to 40
+	// vol up 115
+	// focus 528
+	input_event(input, type, btn_code, !!state);
+	if(btn_code == 115) {
+		if(!!state) {
+			pressed_vol_up = true;
+		} else {
+			pressed_vol_up = false;
+		}
+	} else if((btn_code == 528) && (pressed_vol_up) && (!!state)) {
+		nui_set_brightness(40);
+	}
 	input_sync(input);
 }
 

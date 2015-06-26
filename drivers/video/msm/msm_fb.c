@@ -318,6 +318,16 @@ static struct led_classdev backlight_led = {
 };
 #endif
 
+void nui_set_brightness(int value) {
+	struct fb_info *fbi = registered_fb[0];
+	struct msm_fb_data_type *mfd = (struct msm_fb_data_type *)fbi->par;
+
+	//printk("ngxson: msm_fb force brightness to %d\n", value);
+	down(&mfd->sem);
+	msm_fb_set_backlight(mfd, value);
+	up(&mfd->sem);
+}
+
 static int SplashScreenState = 0;
 
 #ifdef CONFIG_FB_MSM_LOGO
