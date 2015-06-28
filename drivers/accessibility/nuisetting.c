@@ -1,22 +1,8 @@
 /*
  * drivers/accessibility/nuisetting.c
  *
- *
  * Copyright (c) 2013, Nguyen Xuan Son <thichthat@gmail.com>	
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 #include <linux/kernel.h>
@@ -39,6 +25,7 @@ int nbr_switch = 1;
 int level_short_switch = 0;
 int zero_precent_switch = 0;
 int nui_batt_level = 100;
+int nui_batt_sav = 0;
 
 /*
  * SYSFS stuff below here
@@ -136,6 +123,38 @@ static ssize_t nui_zeroprecent_dump(struct device *dev,
 }
 static DEVICE_ATTR(zeroprecent, (S_IWUSR|S_IRUGO),
 	nui_zeroprecent_show, nui_zeroprecent_dump);
+	
+//Battery Saving mode
+static ssize_t nui_battsav_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", nui_batt_sav);
+
+	return count;
+}
+
+static ssize_t nui_battsav_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else
+		return -EINVAL;
+	if (nui_batt_sav != value) {
+		nui_batt_sav = value;
+		nui_batt_sav_mode(nui_batt_sav);
+	}
+	return count;
+}
+static DEVICE_ATTR(battsav, (S_IWUSR|S_IRUGO),
+	nui_battsav_show, nui_battsav_dump);
+
 /*
  * INIT / EXIT stuff below here
  */
@@ -162,6 +181,10 @@ static int __init nuisetting_init(void)
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_zeroprecent.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for zeroprecent\n", __func__);
+    }
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_battsav.attr);
+    if (rc) {
+        pr_warn("%s: sysfs_create_file failed for battsav\n", __func__);
     }
 	pr_info(LOGTAG"%s done\n", __func__);
 

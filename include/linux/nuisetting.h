@@ -23,6 +23,7 @@
 
 #ifndef _LINUX_NUISETTING_H
 #define _LINUX_NUISETTING_H
+#define NUI_BATT_SAV_FREQ_LEV	6
 
 extern int nui_batt_level;
 
@@ -47,5 +48,9 @@ extern int level_short_switch;
  * 1 for enable
  */
 extern int zero_precent_switch;
+
+extern int nui_batt_sav;
+extern int nui_old_freq;
+void nui_batt_sav_mode(int m);
 
 #endif	/* _LINUX_NUISETTING_H */
