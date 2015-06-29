@@ -85,6 +85,7 @@ static struct msm_bus_paths bw_level_tbl[] __initdata = {
 	[3] = BW_MBPS(2128), /* At least 266 MHz on bus. */
 	[4] = BW_MBPS(3200), /* At least 400 MHz on bus. */
 	[5] = BW_MBPS(3600), /* At least 450 MHz on bus. */
+	[6] = BW_MBPS(3936), /* At least 492 MHz on bus. */
 };
 
 static struct msm_bus_scale_pdata bus_scale_data __initdata = {
@@ -93,6 +94,9 @@ static struct msm_bus_scale_pdata bus_scale_data __initdata = {
 	.active_only = 1,
 	.name = "acpuclk-8627",
 };
+
+/* TODO: Overclock to 1.8GHz */
+/* My phone can boot up, but when set to 1836MHz, it freeze */
 
 static struct l2_level l2_freq_tbl[] __initdata = {
 	[0]  = { {  384000, PLL_8, 0, 0x00 },  LVL_LOW, 1050000, 1 },
@@ -117,8 +121,11 @@ static struct l2_level l2_freq_tbl[] __initdata = {
 	[19] = { { 1404000, HFPLL, 1, 0x34 }, LVL_HIGH, 1150000, 5 },
 	[20] = { { 1458000, HFPLL, 1, 0x36 }, LVL_HIGH, 1150000, 5 },
 	[21] = { { 1512000, HFPLL, 1, 0x38 }, LVL_HIGH, 1150000, 5 },
-	[22] = { { 1620000, HFPLL, 1, 0x3C }, LVL_HIGH, 1150000, 5 },
-	[23] = { { 1728000, HFPLL, 1, 0x40 }, LVL_HIGH, 1150000, 5 },
+	[22] = { { 1620000, HFPLL, 1, 0x3C }, LVL_HIGH, 1150000, 6 },
+	[23] = { { 1728000, HFPLL, 1, 0x40 }, LVL_HIGH, 1150000, 6 },
+	[24] = { { 1782000, HFPLL, 1, 0x42 }, LVL_HIGH, 1150000, 6 },
+	//[25] = { { 1836000, HFPLL, 1, 0x44 }, LVL_HIGH, 1150000, 6 },
+	//[26] = { { 1890000, HFPLL, 1, 0x46 }, LVL_HIGH, 1150000, 6 },
 	{ }
 };
 
@@ -144,9 +151,12 @@ static struct acpu_level acpu_freq_tbl_slow[] __initdata = {
 	{ 1, {  1350000, HFPLL, 1, 0x32 }, L2(15), 1225000 },
 	{ 0, {  1404000, HFPLL, 1, 0x34 }, L2(15), 1237500 },
 	{ 1, {  1458000, HFPLL, 1, 0x36 }, L2(15), 1237500 },
-	{ 1, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1250000 },
+	{ 0, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1250000 },
 	{ 1, {  1620000, HFPLL, 1, 0x3C }, L2(15), 1300000 },
 	{ 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1300000 },
+	{ 1, {  1782000, HFPLL, 1, 0x42 }, L2(15), 1275000 },
+	//{ 1, {  1836000, HFPLL, 1, 0x44 }, L2(15), 1350000 },
+	//{ 1, {  1890000, HFPLL, 1, 0x46 }, L2(15), 1300000 },
 	{ 0, { 0 } }
 };
 
@@ -172,9 +182,12 @@ static struct acpu_level acpu_freq_tbl_nom[] __initdata = {
 	{ 1, {  1350000, HFPLL, 1, 0x32 }, L2(15), 1175000 },
 	{ 0, {  1404000, HFPLL, 1, 0x34 }, L2(15), 1187500 },
 	{ 1, {  1458000, HFPLL, 1, 0x36 }, L2(15), 1187500 },
-	{ 1, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1200000 },
+	{ 0, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1200000 },
 	{ 1, {  1620000, HFPLL, 1, 0x3C }, L2(15), 1250000 },
 	{ 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1250000 },
+	{ 1, {  1782000, HFPLL, 1, 0x42 }, L2(15), 1275000 },
+	//{ 1, {  1836000, HFPLL, 1, 0x44 }, L2(15), 1350000 },
+	//{ 1, {  1890000, HFPLL, 1, 0x46 }, L2(15), 1300000 },
 	{ 0, { 0 } }
 };
 
@@ -200,9 +213,12 @@ static struct acpu_level acpu_freq_tbl_fast[] __initdata = {
 	{ 1, {  1350000, HFPLL, 1, 0x32 }, L2(15), 1125000 },
 	{ 0, {  1404000, HFPLL, 1, 0x34 }, L2(15), 1137500 },
 	{ 1, {  1458000, HFPLL, 1, 0x36 }, L2(15), 1137500 },
-	{ 1, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1150000 },
+	{ 0, {  1512000, HFPLL, 1, 0x38 }, L2(15), 1150000 },
 	{ 1, {  1620000, HFPLL, 1, 0x3C }, L2(15), 1200000 },
 	{ 1, {  1728000, HFPLL, 1, 0x40 }, L2(15), 1200000 },
+	{ 1, {  1782000, HFPLL, 1, 0x42 }, L2(15), 1275000 },
+	//{ 1, {  1836000, HFPLL, 1, 0x44 }, L2(15), 1350000 },
+	//{ 1, {  1890000, HFPLL, 1, 0x46 }, L2(15), 1300000 },
 	{ 0, { 0 } }
 };
 
