@@ -18,7 +18,7 @@
 /*********************************************************************
  *                     FREQUENCY TABLE HELPERS                       *
  *********************************************************************/
-int nui_old_freq = 1026000;
+int nui_old_freq = 1134000;
 
 
 int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
@@ -192,13 +192,13 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf)
 		return -ENODEV;
 
 	table = per_cpu(cpufreq_show_table, cpu);
-	printk("ngxson: debug freq_table.c TABLE_END=%d\n", CPUFREQ_TABLE_END);
+	//printk("ngxson: debug freq_table.c TABLE_END=%d\n", CPUFREQ_TABLE_END);
 	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
 		if (table[i].frequency == CPUFREQ_ENTRY_INVALID) {
-			printk("ngxson: debug freq_table.c ENTRY_INVALID=%d\n", CPUFREQ_ENTRY_INVALID);
+			//printk("ngxson: debug freq_table.c ENTRY_INVALID=%d\n", CPUFREQ_ENTRY_INVALID);
 			continue;
 		}
-		printk("ngxson: index=%d freq=%d\n", i, table[i].frequency);
+		//printk("ngxson: index=%d freq=%d\n", i, table[i].frequency);
 		count += sprintf(&buf[count], "%d ", table[i].frequency);
 	}
 	count += sprintf(&buf[count], "\n");

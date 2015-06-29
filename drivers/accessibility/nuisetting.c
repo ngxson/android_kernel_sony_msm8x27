@@ -125,7 +125,7 @@ static DEVICE_ATTR(zeroprecent, (S_IWUSR|S_IRUGO),
 	nui_zeroprecent_show, nui_zeroprecent_dump);
 	
 //Battery Saving mode
-static ssize_t nui_battsav_show(struct device *dev,
+static ssize_t nui_nooc_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	size_t count = 0;
@@ -135,7 +135,7 @@ static ssize_t nui_battsav_show(struct device *dev,
 	return count;
 }
 
-static ssize_t nui_battsav_dump(struct device *dev,
+static ssize_t nui_nooc_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 	int value;
@@ -152,8 +152,8 @@ static ssize_t nui_battsav_dump(struct device *dev,
 	}
 	return count;
 }
-static DEVICE_ATTR(battsav, (S_IWUSR|S_IRUGO),
-	nui_battsav_show, nui_battsav_dump);
+static DEVICE_ATTR(nooc, (S_IWUSR|S_IRUGO),
+	nui_nooc_show, nui_nooc_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -165,6 +165,9 @@ EXPORT_SYMBOL_GPL(nui_setting_kobj);
 static int __init nuisetting_init(void)
 {
 	int rc = 0;
+
+	nui_batt_sav = 0;
+	nui_batt_sav_mode(nui_batt_sav);
 
     nui_setting_kobj = kobject_create_and_add("nui", NULL) ;
     if (nui_setting_kobj == NULL) {
@@ -182,9 +185,9 @@ static int __init nuisetting_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for zeroprecent\n", __func__);
     }
-    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_battsav.attr);
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_nooc.attr);
     if (rc) {
-        pr_warn("%s: sysfs_create_file failed for battsav\n", __func__);
+        pr_warn("%s: sysfs_create_file failed for nooc\n", __func__);
     }
 	pr_info(LOGTAG"%s done\n", __func__);
 

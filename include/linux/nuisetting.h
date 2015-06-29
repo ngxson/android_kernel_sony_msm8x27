@@ -23,7 +23,7 @@
 
 #ifndef _LINUX_NUISETTING_H
 #define _LINUX_NUISETTING_H
-#define NUI_BATT_SAV_FREQ_LEV	6
+#define NUI_BATT_SAV_FREQ_LEV	7
 
 extern int nui_batt_level;
 
