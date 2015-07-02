@@ -239,6 +239,19 @@ static void input_handle_event(struct input_dev *dev,
 {
 	int disposition = INPUT_IGNORE_EVENT;
 
+	unsigned int codenui;
+//ngxson headset fix
+	if(code == 257) {
+		//printk("ngxson: input_handle vol up   keycode=%d type=%d value=%d\n", code, type, value);
+		codenui = 115;
+	} else if(code == 258) {
+		//printk("ngxson: input_handle vol down keycode=%d type=%d value=%d\n", code, type, value);
+		codenui = 114;
+	} else {
+		codenui = code;
+	}
+//end
+
 	switch (type) {
 
 	case EV_SYN:
@@ -345,7 +358,7 @@ static void input_handle_event(struct input_dev *dev,
 		dev->event(dev, type, code, value);
 
 	if (disposition & INPUT_PASS_TO_HANDLERS)
-		input_pass_event(dev, type, code, value);
+		input_pass_event(dev, type, codenui, value);
 }
 
 /**

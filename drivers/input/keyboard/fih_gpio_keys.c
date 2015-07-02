@@ -345,7 +345,7 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int btn_code = button->code;
-	cputime64_t time_now = ktime_to_ms(ktime_get());
+	//cputime64_t time_now = ktime_to_ms(ktime_get());
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
 	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
