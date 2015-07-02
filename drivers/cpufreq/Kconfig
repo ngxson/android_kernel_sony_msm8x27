@@ -229,6 +229,14 @@ config CPU_FREQ_GOV_NUIONDEMAND
 	  Lionheart
 
 	  If in doubt, say N.
+	  
+config CPU_FREQ_GOV_LULZACTIVE
+	tristate "LULZACTIVE"
+	depends on CPU_FREQ
+	help
+	  Lionheart
+
+	  If in doubt, say N.
 
 menu "x86 CPU frequency scaling drivers"
 depends on X86
