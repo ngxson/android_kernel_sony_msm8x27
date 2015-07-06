@@ -81,7 +81,7 @@
 #include <linux/input/doubletap2wake.h>
 #include <linux/mfd/pm8xxx/vibrator.h>
 
-#define D2W_PWRKEY_DUR 60
+#define D2W_PWRKEY_DUR 30
 #define DT2W_TIMEOUT_MAX         450
 #define DT2W_TIMEOUT_MIN         80
 #define DT2W_DELTA_X               150
@@ -344,18 +344,28 @@ static bool exp_fn_inited;
 static struct mutex exp_fn_list_mutex;
 static struct list_head exp_fn_list;
 
+//for keypress
+void btn_press(int i, bool b) {
+	if(b) {
+		input_event(doubletap2wake_pwrdev, EV_KEY, i, 1);
+		input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
+	} else {
+		input_event(doubletap2wake_pwrdev, EV_KEY, i, 0);
+		input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
+	}
+}
+
 //ngxson_dt2w
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
-	if (!mutex_trylock(&pwrkeyworklock))
-		return;
-	if(dt2w_vib == 1) vibrate(70);
+	//if (!mutex_trylock(&pwrkeyworklock))
+	//	return;
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(D2W_PWRKEY_DUR);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(D2W_PWRKEY_DUR);
-	mutex_unlock(&pwrkeyworklock);
+	//msleep(D2W_PWRKEY_DUR);
+	//mutex_unlock(&pwrkeyworklock);
 	return;
 }
 static DECLARE_WORK(doubletap2wake_presspwr_work, doubletap2wake_presspwr);
@@ -375,7 +385,7 @@ void doubletap2wake_reset(void) {
 
 static void detect_doubletap2wake(int x, int y)
 {
-if((x>10) && (x<1000) && (y>10) && (y<1000)) { /* Prevent sliding from screen edge */
+if((x>20) && (x<1000) && (y>20) && (y<1000)) { /* Prevent sliding from screen edge */
 	//printk("[ngxson] [DT2W] dt2w x=%d y=%d\n", x, y);
 	if (tap_time_pre == 0) {
 		tap_time_pre = ktime_to_ms(ktime_get());
@@ -391,6 +401,7 @@ if((x>10) && (x<1000) && (y>10) && (y<1000)) { /* Prevent sliding from screen ed
 						|| (x_pre == 0 && y_pre == 0)) 
 						&& ((y > DT2W_SCREEN_MIDDLE) && (y_pre > DT2W_SCREEN_MIDDLE))) {
 			doubletap2wake_reset();
+			if(dt2w_vib == 1) vibrate(70);
 			doubletap2wake_pwrtrigger();
 		} else {
 			tap_time_pre = ktime_to_ms(ktime_get());
@@ -1299,7 +1310,9 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 	struct synaptics_rmi4_data *rmi4_data = data;
 
 	do {
-		if((dt2w_switch > 0)&&(scr_suspended)) wake_lock_timeout(&dt2w_wake_lock, 500);
+		if((dt2w_switch > 0)&&(scr_suspended)) {
+			wake_lock_timeout(&dt2w_wake_lock, 500);
+		}
 		touch_count = synaptics_rmi4_sensor_report(rmi4_data);
 
 		if (touch_count > 0) {
@@ -2663,7 +2676,7 @@ static struct i2c_driver synaptics_rmi4_driver = {
  */
 static int __init synaptics_rmi4_init(void)
 {
-///ngxson-dt2w
+//ngxson-dt2w
 	doubletap2wake_pwrdev = input_allocate_device();
 	if (!doubletap2wake_pwrdev) {
 		pr_err("Can't allocate suspend autotest power button\n");
@@ -2671,6 +2684,15 @@ static int __init synaptics_rmi4_init(void)
 	doubletap2wake_pwrdev->name = "dt2w_pwrkey";
 	doubletap2wake_pwrdev->phys = "dt2w_pwrkey/input0";
 	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_POWER);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_CAMERA_SNAPSHOT);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_CAMERA_FOCUS);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_BACK);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_NEXTSONG);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_PLAYPAUSE);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_PREVIOUSSONG);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_SEARCH);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_MENU);
+	input_set_capability(doubletap2wake_pwrdev, EV_KEY, KEY_HOMEPAGE);
 	wake_lock_init(&dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w");
 //end
 	return i2c_add_driver(&synaptics_rmi4_driver);

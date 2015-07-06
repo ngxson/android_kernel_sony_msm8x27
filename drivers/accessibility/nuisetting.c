@@ -26,6 +26,8 @@ int level_short_switch = 0;
 int zero_precent_switch = 0;
 int nui_batt_level = 100;
 int nui_batt_sav = 0;
+int camera_key = 766;
+int focus_key = 528;
 
 /*
  * SYSFS stuff below here
@@ -59,7 +61,7 @@ static ssize_t nui_brightness_dump(struct device *dev,
 	}
 	return count;
 }
-static DEVICE_ATTR(nuibrightness, (S_IWUSR|S_IRUGO),
+static DEVICE_ATTR(nuibrightness, (S_IWUGO|S_IRUGO),
 	nui_brightness_show, nui_brightness_dump);
 
 //short vibration setting
@@ -91,7 +93,7 @@ static ssize_t nui_level_short_dump(struct device *dev,
 	}
 	return count;
 }
-static DEVICE_ATTR(level_short, (S_IWUSR|S_IRUGO),
+static DEVICE_ATTR(level_short, (S_IWUGO|S_IRUGO),
 	nui_level_short_show, nui_level_short_dump);
 
 //Prevent 0% battery level
@@ -121,7 +123,7 @@ static ssize_t nui_zeroprecent_dump(struct device *dev,
 	}
 	return count;
 }
-static DEVICE_ATTR(zeroprecent, (S_IWUSR|S_IRUGO),
+static DEVICE_ATTR(zeroprecent, (S_IWUGO|S_IRUGO),
 	nui_zeroprecent_show, nui_zeroprecent_dump);
 	
 //Battery Saving mode
@@ -152,8 +154,66 @@ static ssize_t nui_nooc_dump(struct device *dev,
 	}
 	return count;
 }
-static DEVICE_ATTR(nooc, (S_IWUSR|S_IRUGO),
+static DEVICE_ATTR(nooc, (S_IWUGO|S_IRUGO),
 	nui_nooc_show, nui_nooc_dump);
+	
+// camera key setting 
+static ssize_t camera_key_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", camera_key);
+}
+
+static ssize_t camera_key_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) {
+		pr_err("%s: error getting level\n", __func__);
+		return -EINVAL;
+	}
+
+	camera_key = val;
+
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(camera_key, (S_IWUGO|S_IRUGO),
+	camera_key_show, camera_key_dump);
+
+// focus key setting 
+static ssize_t focus_key_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", focus_key);
+}
+
+static ssize_t focus_key_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) {
+		pr_err("%s: error getting level\n", __func__);
+		return -EINVAL;
+	}
+
+	focus_key = val;
+
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(focus_key, (S_IWUGO|S_IRUGO),
+	focus_key_show, focus_key_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -189,6 +249,14 @@ static int __init nuisetting_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for nooc\n", __func__);
     }
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camera_key.attr);	
+	if (rc) {
+		pr_warn("dev_attr_camera_key device_create_file failed\n");
+	}
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus_key.attr);	
+	if (rc) {
+		pr_warn("dev_attr_focus_key device_create_file failed\n");
+	}
 	pr_info(LOGTAG"%s done\n", __func__);
 
 	return 0;

@@ -31,6 +31,8 @@
 #include <asm-generic/cputime.h>
 #include <../../video/msm/msm_fb.h>
 
+#include <linux/nuisetting.h>
+
 struct wakeup_data
 {
 	const char	*name;
@@ -351,20 +353,32 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
 	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
+	//for camera and focus key
+	if(btn_code == 766) {
+		if(camera_key == 766) {
+			input_event(input, type, btn_code, !!state);
+			input_sync(input);
+		} else btn_press(camera_key, !!state);
+	} else if(btn_code == 528) {
+		if(focus_key == 528) {
+			input_event(input, type, btn_code, !!state);
+			input_sync(input);
+		} else btn_press(focus_key, !!state);
+	} else {
+		input_event(input, type, btn_code, !!state);
+		input_sync(input);
+	}
+	
 	// Hold vol up and then press focus once to force brghtness to 40
 	// vol up 115
 	// focus 528
-	input_event(input, type, btn_code, !!state);
+	// detector
 	if(btn_code == 115) {
-		if(!!state) {
-			pressed_vol_up = true;
-		} else {
-			pressed_vol_up = false;
-		}
+		if(!!state) pressed_vol_up = true;
+		else pressed_vol_up = false;
 	} else if((btn_code == 528) && (pressed_vol_up) && (!!state)) {
 		nui_set_brightness(40);
 	}
-	input_sync(input);
 }
 
 static void gpio_keys_work_func(struct work_struct *work)
@@ -745,11 +759,11 @@ static int gpio_keys_suspend(struct device *dev)
 	if (device_may_wakeup(&pdev->dev)) {
 		for (i = 0; i < pdata->nbuttons; i++) {
 			struct gpio_keys_button *button = &pdata->buttons[i];
-			if ( file_node->dynamic_wakeup && ( file_node->dynamic_wakeup + i )->wakeup ) {
+			//if ( file_node->dynamic_wakeup && ( file_node->dynamic_wakeup + i )->wakeup ) {
 				int irq = gpio_to_irq(button->gpio);
 				enable_irq_wake(irq);
-				printk( "GKEY : Enable %s Key wake\n", button->desc );
-			}
+			//	printk( "GKEY : Enable %s Key wake\n", button->desc );
+			//}
 		}
 	}
 
@@ -767,11 +781,11 @@ static int gpio_keys_resume(struct device *dev)
 	for (i = 0; i < pdata->nbuttons; i++) {
 
 		struct gpio_keys_button *button = &pdata->buttons[i];
-		if ( file_node->dynamic_wakeup && ( file_node->dynamic_wakeup + i )->wakeup && device_may_wakeup(&pdev->dev)) {
+		//if ( file_node->dynamic_wakeup && ( file_node->dynamic_wakeup + i )->wakeup && device_may_wakeup(&pdev->dev)) {
 			int irq = gpio_to_irq(button->gpio);
 			disable_irq_wake(irq);
-			printk( "GKEY : Disable %s Key wake\n", button->desc );
-		}
+		//	printk( "GKEY : Disable %s Key wake\n", button->desc );
+		//}
 
 		gpio_keys_report_event(&ddata->data[i]);
 	}

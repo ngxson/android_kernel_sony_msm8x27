@@ -49,8 +49,20 @@ extern int level_short_switch;
  */
 extern int zero_precent_switch;
 
+/*
+ * Battery saving mode (no overclock)
+ * 0 for disable
+ * 1 for enable
+ */
 extern int nui_batt_sav;
 extern int nui_old_freq;
 void nui_batt_sav_mode(int m);
+
+/*
+ * Camera/focus settings
+ */
+extern int camera_key;
+extern int focus_key;
+void btn_press(int i, bool b);
 
 #endif	/* _LINUX_NUISETTING_H */
