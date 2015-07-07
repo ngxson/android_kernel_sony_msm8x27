@@ -355,13 +355,13 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 
 	//for camera and focus key
 	if(btn_code == 766) {
-		if(camera_key == 766) {
-			input_event(input, type, btn_code, !!state);
+		if((camera_key == 766) || (camera_key == 528)) {
+			input_event(input, type, camera_key, !!state);
 			input_sync(input);
 		} else btn_press(camera_key, !!state);
 	} else if(btn_code == 528) {
-		if(focus_key == 528) {
-			input_event(input, type, btn_code, !!state);
+		if((focus_key == 528) || (focus_key == 766)) {
+			input_event(input, type, focus_key, !!state);
 			input_sync(input);
 		} else btn_press(focus_key, !!state);
 	} else {
