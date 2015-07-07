@@ -29,6 +29,7 @@
 #include "msm_fb.h"
 #include "mdp.h"
 #include "mdp4.h"
+#include <linux/nuisetting.h>
 
 #define fb_width(fb)	((fb)->var.xres)
 #define fb_height(fb)	((fb)->var.yres)
@@ -259,6 +260,37 @@ static void draw_logo(void)
 				}
 			}
 			printk(KERN_ERR "[DISPLAY]%s: failed %d times, ret <%d>\n",
+					__func__, i, ret);
+			msleep(100);
+		};
+	}
+}
+
+void draw_nui_logo(int logo)
+{
+	struct fb_info *fb_info = registered_fb[0];
+	int ret = 0, i = 0;
+
+	if (fb_info && fb_info->fbops->fb_open) {
+		ret = fb_info->fbops->fb_open(fb_info, 0);
+		if (ret != 0) {
+			printk(KERN_ERR "[ngxson]%s: Can not open fb, ret <%d>\n",
+					__func__, ret);
+		}
+
+		while (++i < 6) {
+			if (logo == 1) ret = fih_load_565rle_image(INIT_IMAGE_FILE_ONE);
+			else if (logo == 2) ret = fih_load_565rle_image(INIT_IMAGE_FILE_TWO);
+			else ret = fih_load_565rle_image(INIT_IMAGE_FILE_THR);
+			
+			if (ret == 0) {
+				ret = fb_info->fbops->fb_pan_display(&fb_info->var, fb_info);
+				if (ret == 0) {
+					printk(KERN_INFO "[ngxson]%s: Drawing logo\n", __func__);
+					break;
+				}
+			}
+			printk(KERN_ERR "[ngxson]%s: failed %d times, ret <%d>\n",
 					__func__, i, ret);
 			msleep(100);
 		};

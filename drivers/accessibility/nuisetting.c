@@ -157,6 +157,36 @@ static ssize_t nui_nooc_dump(struct device *dev,
 static DEVICE_ATTR(nooc, (S_IWUGO|S_IRUGO),
 	nui_nooc_show, nui_nooc_dump);
 	
+//Logo tool
+static ssize_t nui_logo_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+	count += sprintf(buf, "%d\n", 0);
+	return count;
+}
+
+static ssize_t nui_logo_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "1"))
+		value = 1;
+	else if (sysfs_streq(buf, "2"))
+		value = 2;
+	else if (sysfs_streq(buf, "3"))
+		value = 3;
+	else
+		return -EINVAL;
+	
+	draw_nui_logo(value);
+	
+	return count;
+}
+static DEVICE_ATTR(logo, (S_IWUGO|S_IRUGO),
+	nui_logo_show, nui_logo_dump);
+	
 // camera key setting 
 static ssize_t camera_key_show(struct device *dev,
 				    struct device_attribute *attr, char *buf)
@@ -173,12 +203,21 @@ static ssize_t camera_key_dump(struct device *dev,
 	int rc;
 
 	rc = kstrtoint(buf, 10, &val);
-	if (rc) {
-		pr_err("%s: error getting level\n", __func__);
-		return -EINVAL;
-	}
+	if (rc) return -EINVAL;
 
-	camera_key = val;
+	if((val == KEY_POWER) ||
+		(val == KEY_CAMERA_SNAPSHOT) ||
+		(val == KEY_CAMERA_FOCUS) ||
+		(val == KEY_BACK) ||
+		(val == KEY_NEXTSONG) ||
+		(val == KEY_PLAYPAUSE) ||
+		(val == KEY_PREVIOUSSONG) ||
+		(val == KEY_SEARCH) ||
+		(val == KEY_MENU) ||
+		(val == KEY_HOMEPAGE) ||
+		(val == 0)) {
+				camera_key = val;
+		} else return -EINVAL;
 
 	return strnlen(buf, count);
 }
@@ -202,12 +241,21 @@ static ssize_t focus_key_dump(struct device *dev,
 	int rc;
 
 	rc = kstrtoint(buf, 10, &val);
-	if (rc) {
-		pr_err("%s: error getting level\n", __func__);
-		return -EINVAL;
-	}
-
-	focus_key = val;
+	if (rc) return -EINVAL;
+	
+	if((val == KEY_POWER) ||
+		(val == KEY_CAMERA_SNAPSHOT) ||
+		(val == KEY_CAMERA_FOCUS) ||
+		(val == KEY_BACK) ||
+		(val == KEY_NEXTSONG) ||
+		(val == KEY_PLAYPAUSE) ||
+		(val == KEY_PREVIOUSSONG) ||
+		(val == KEY_SEARCH) ||
+		(val == KEY_MENU) ||
+		(val == KEY_HOMEPAGE) ||
+		(val == 0)) {
+				focus_key = val;
+		} else return -EINVAL;
 
 	return strnlen(buf, count);
 }
@@ -248,6 +296,10 @@ static int __init nuisetting_init(void)
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_nooc.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for nooc\n", __func__);
+    }
+    rc = sysfs_create_file(nui_setting_kobj, &dev_attr_logo.attr);
+    if (rc) {
+        pr_warn("%s: sysfs_create_file failed for logo\n", __func__);
     }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camera_key.attr);	
 	if (rc) {

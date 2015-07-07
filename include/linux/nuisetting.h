@@ -65,4 +65,7 @@ extern int camera_key;
 extern int focus_key;
 void btn_press(int i, bool b);
 
+//logo tool
+void draw_nui_logo(int logo);
+
 #endif	/* _LINUX_NUISETTING_H */

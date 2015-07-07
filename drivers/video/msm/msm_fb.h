@@ -257,6 +257,9 @@ int msm_fb_check_frame_rate(struct msm_fb_data_type *mfd,
 
 #ifdef CONFIG_FB_MSM_LOGO
 #define INIT_IMAGE_FILE "/logo.rle"
+#define INIT_IMAGE_FILE_ONE "/logo1.rle"
+#define INIT_IMAGE_FILE_TWO "/logo2.rle"
+#define INIT_IMAGE_FILE_THR "/logo3.rle"
 #if !defined(CONFIG_FB_MSM_DEFAULT_DEPTH_RGBA8888)
 int load_565rle_image(char *filename, bool bf_supported);
 #endif
