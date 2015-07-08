@@ -357,8 +357,8 @@ void btn_press(int i, bool b) {
 
 //ngxson_dt2w
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
-	//if (!mutex_trylock(&pwrkeyworklock))
-	//	return;
+	if (!mutex_trylock(&pwrkeyworklock))
+		return;
 	if(dt2w_vib == 1) vibrate(70);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
@@ -366,7 +366,7 @@ static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	//msleep(D2W_PWRKEY_DUR);
-	//mutex_unlock(&pwrkeyworklock);
+	mutex_unlock(&pwrkeyworklock);
 	return;
 }
 static DECLARE_WORK(doubletap2wake_presspwr_work, doubletap2wake_presspwr);
