@@ -359,6 +359,7 @@ void btn_press(int i, bool b) {
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
 	//if (!mutex_trylock(&pwrkeyworklock))
 	//	return;
+	if(dt2w_vib == 1) vibrate(70);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(D2W_PWRKEY_DUR);
@@ -401,7 +402,6 @@ if((x>20) && (x<1000) && (y>20) && (y<1000)) { /* Prevent sliding from screen ed
 						|| (x_pre == 0 && y_pre == 0)) 
 						&& ((y > DT2W_SCREEN_MIDDLE) && (y_pre > DT2W_SCREEN_MIDDLE))) {
 			doubletap2wake_reset();
-			if(dt2w_vib == 1) vibrate(70);
 			doubletap2wake_pwrtrigger();
 		} else {
 			tap_time_pre = ktime_to_ms(ktime_get());
