@@ -24,6 +24,7 @@
 #include <mach/camera.h>
 #include <mach/gpio.h>
 #include "msm_camera_i2c.h"
+#include <linux/nuisetting.h>
 
 struct flash_work {
 	struct work_struct my_work;
@@ -591,7 +592,12 @@ int msm_camera_flash_external(
         printk("msm_camera_flash_external: case MSM_CAMERA_LED_LOW ~\n");
 /*MM-UW-Add torch current-00+{*/
         CDBG("lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED)\n");
-        rc = lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+        if (nui_torch_intensity==0) 
+			rc = lm3642_control(TORCH_46P88_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		else if (nui_torch_intensity==1) 
+			rc = lm3642_control(TORCH_93P74_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		else
+			rc = lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
         if (rc < 0)
             pr_err("lm3642_control(TORCH_140P63_MA, MODES_TORCH) fail !\n");
 		break;

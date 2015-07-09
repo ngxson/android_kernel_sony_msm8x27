@@ -1,21 +1,7 @@
 /*
  * include/linux/nuisetting.h
  *
- * Copyright (c) 2013, Dennis Rassmann <showp1984@gmail.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ * Copyright (c) 2015, Nguyen Xuan Son
  *
  * SETTINGS FOR NUI KERNEL
  *
@@ -30,21 +16,21 @@ extern int nui_batt_level;
 /*
  * Nui brightness settings
  * 0 for stock value
- * 1 for darker
+ * 1 for darker (default)
  * 2 for very dark
  */
 extern int nbr_switch;
 
 /*
  * Voltage level for short vibration (haptic, navkay, etc) setting
- * 0 for disable
+ * 0 for disable (default)
  * 1 for enable
  */
 extern int level_short_switch;
 
 /*
  * Prevent 0% battery level settings
- * 0 for disable
+ * 0 for disable (default)
  * 1 for enable
  */
 extern int zero_precent_switch;
@@ -52,7 +38,7 @@ extern int zero_precent_switch;
 /*
  * Battery saving mode (no overclock)
  * 0 for disable
- * 1 for enable
+ * 1 for enable (default)
  */
 extern int nui_batt_sav;
 extern int nui_old_freq;
@@ -67,5 +53,13 @@ void btn_press(int i, bool b);
 
 //logo tool
 void draw_nui_logo(int logo);
+
+/*
+ * Torch intensity
+ * 0 for TORCH_46P88_MA
+ * 1 for TORCH_93P74_MA
+ * 2 for TORCH_140P63_MA (default)
+ */
+extern int nui_torch_intensity;
 
 #endif	/* _LINUX_NUISETTING_H */

@@ -1,7 +1,7 @@
 /*
  * drivers/accessibility/nuisetting.c
  *
- * Copyright (c) 2013, Nguyen Xuan Son <thichthat@gmail.com>	
+ * Copyright (c) 2015, Nguyen Xuan Son <thichthat@gmail.com>	
  *
  */
 
@@ -28,6 +28,7 @@ int nui_batt_level = 100;
 int nui_batt_sav = 0;
 int camera_key = 766;
 int focus_key = 528;
+int nui_torch_intensity = 2;
 
 /*
  * SYSFS stuff below here
@@ -63,6 +64,38 @@ static ssize_t nui_brightness_dump(struct device *dev,
 }
 static DEVICE_ATTR(nuibrightness, (S_IWUGO|S_IRUGO),
 	nui_brightness_show, nui_brightness_dump);
+
+//Torch intensity
+static ssize_t nui_torch_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", nui_torch_intensity);
+
+	return count;
+}
+
+static ssize_t nui_torch_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else if (sysfs_streq(buf, "2"))
+		value = 2;
+	else
+		return -EINVAL;
+	if (nui_torch_intensity != value) {
+		nui_torch_intensity = value;
+	}
+	return count;
+}
+static DEVICE_ATTR(torch, (S_IWUGO|S_IRUGO),
+	nui_torch_show, nui_torch_dump);
 
 //short vibration setting
 static ssize_t nui_level_short_show(struct device *dev,
@@ -306,6 +339,10 @@ static int __init nuisetting_init(void)
 		pr_warn("dev_attr_camera_key device_create_file failed\n");
 	}
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus_key.attr);	
+	if (rc) {
+		pr_warn("dev_attr_focus_key device_create_file failed\n");
+	}
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_torch.attr);	
 	if (rc) {
 		pr_warn("dev_attr_focus_key device_create_file failed\n");
 	}
