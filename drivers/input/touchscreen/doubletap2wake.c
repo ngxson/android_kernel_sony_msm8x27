@@ -51,6 +51,7 @@
 int dt2w_switch = 0;
 int dt2w_vib = 1;
 bool scr_suspended = false;
+bool nui_report_input = true;
 
 /* Read cmdline for dt2w */
 static int __init read_dt2w_cmdline(char *dt2w)
@@ -79,12 +80,15 @@ __setup("dt2w=", read_dt2w_cmdline);
 static void dt2w_early_suspend(struct early_suspend *h) {
 	scr_suspended = true;
 	doubletap2wake_reset();
+	if(dt2w_switch>0) nui_report_input = false;
+	else nui_report_input = true;
 	//printk( "ngxson : dt2w_early_suspend\n");
 }
 
 static void dt2w_late_resume(struct early_suspend *h) {
 	scr_suspended = false;
 	doubletap2wake_reset();
+	nui_report_input = true;
 	//printk( "ngxson : dt2w_late_resume\n");
 }
 

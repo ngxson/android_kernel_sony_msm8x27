@@ -93,6 +93,7 @@ static int x_pre = 0, y_pre = 0;
 
 static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
+static DEFINE_MUTEX(irqdt2w);
 static struct wake_lock dt2w_wake_lock;
 //end
 
@@ -577,13 +578,13 @@ static void synaptics_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 	unsigned char prev_status = rmi4_data->finger_state[finger].status;
 
 	if (!prev_status && currentf->status) {
-		if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+		if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 				ABS_MT_POSITION_X, x);
-		if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+		if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 				ABS_MT_POSITION_Y, y);
-		if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+		if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 				ABS_MT_TOUCH_MAJOR, max(wx, wy));
-		if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+		if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 				ABS_MT_TOUCH_MINOR, min(wx, wy));
 		rmi4_data->finger_state[finger].x = x;
 		rmi4_data->finger_state[finger].y = y;
@@ -591,26 +592,26 @@ static void synaptics_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 		rmi4_data->finger_state[finger].wy = wy;
 	} else if (prev_status && currentf->status) {
 		if (x != prev_x) {
-			if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+			if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 					ABS_MT_POSITION_X, x);
 			rmi4_data->finger_state[finger].x = x;
 		}
 		if (y != prev_y) {
-			if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+			if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 					ABS_MT_POSITION_Y, y);
 			rmi4_data->finger_state[finger].y = y;
 		}
 		if ((wx != prev_wx) || (wy != prev_wy)) {
-			if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+			if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 					ABS_MT_TOUCH_MAJOR, max(wx, wy));
-			if (!scr_suspended) input_report_abs(rmi4_data->input_dev,
+			if (nui_report_input) input_report_abs(rmi4_data->input_dev,
 					ABS_MT_TOUCH_MINOR, min(wx, wy));
 			rmi4_data->finger_state[finger].wx = wx;
 			rmi4_data->finger_state[finger].wy = wy;
 		}
 	}
 #else
-if(!scr_suspended) {
+if (nui_report_input) {
 	if (currentf->status) {
 		input_report_abs(rmi4_data->input_dev,
 				ABS_MT_POSITION_X, x);
@@ -977,8 +978,13 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	}
 
 #ifndef TYPE_B_PROTOCOL
+if(dt2w_switch > 0) {
 	if (!touch_count)
-		input_mt_sync(rmi4_data->input_dev);
+		if (nui_report_input) input_mt_sync(rmi4_data->input_dev);
+} else {
+	if (!touch_count)
+		if (nui_report_input) input_mt_sync(rmi4_data->input_dev);	
+}
 #endif
 
 	input_sync(rmi4_data->input_dev);
@@ -1085,10 +1091,10 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 
 #ifndef TYPE_B_PROTOCOL
 	if (!touch_count)
-		input_mt_sync(rmi4_data->input_dev);
+		if (nui_report_input) input_mt_sync(rmi4_data->input_dev);
 #endif
 
-	input_sync(rmi4_data->input_dev);
+	if (nui_report_input) input_sync(rmi4_data->input_dev);
 
 	return touch_count;
 }
@@ -1175,13 +1181,13 @@ static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
 			}
 		}
 #else
-		input_report_key(rmi4_data->input_dev,
+		if (nui_report_input) input_report_key(rmi4_data->input_dev,
 				f1a->button_map[button],
 				status);
 #endif
 	}
 
-	input_sync(rmi4_data->input_dev);
+	if (nui_report_input) input_sync(rmi4_data->input_dev);
 
 	return;
 }
@@ -1311,10 +1317,12 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 	unsigned char touch_count;
 	struct synaptics_rmi4_data *rmi4_data = data;
 
+	if((dt2w_switch > 0)&&(scr_suspended)) {
+		wake_lock_timeout(&dt2w_wake_lock, 500);
+		mutex_trylock(&irqdt2w);
+	}
+	
 	do {
-		if((dt2w_switch > 0)&&(scr_suspended)) {
-			wake_lock_timeout(&dt2w_wake_lock, 500);
-		}
 		touch_count = synaptics_rmi4_sensor_report(rmi4_data);
 
 		if (touch_count > 0) {
@@ -1325,6 +1333,10 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 			break;
 		}
 	} while (!rmi4_data->touch_stopped);
+
+	if((dt2w_switch > 0)&&(scr_suspended)) {
+		mutex_unlock(&irqdt2w);
+	}
 
 	return IRQ_HANDLED;
 }
@@ -2524,7 +2536,7 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 
 	//printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
 	if ((dt2w_switch > 0)) {
-		enable_irq_wake(rmi4_data->irq);
+		enable_irq(rmi4_data->irq);
 		//printk( "ngxson: debug dt2w on\n");
 		if (rmi4_data->full_pm_cycle)
 			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
@@ -2566,7 +2578,7 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 	//printk( "ngxson: debug synaptics_rmi4_late_resume\n");
 	if ((dt2w_switch > 0) && (!ngxson_touch_slept)) {
 		//printk( "ngxson: debug dt2w on\n");
-		disable_irq_wake(rmi4_data->irq);
+		//disable_irq(rmi4_data->irq);
 	} else {
 		//printk( "ngxson: debug synaptics_rmi4_late_resume\n");
 		ngxson_touch_slept = false;
