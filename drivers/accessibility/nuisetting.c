@@ -29,6 +29,7 @@ int nui_batt_sav = 0;
 int camera_key = 766;
 int focus_key = 528;
 int nui_torch_intensity = 2;
+int nui_proximity_sens = 0;
 
 /*
  * SYSFS stuff below here
@@ -158,6 +159,37 @@ static ssize_t nui_zeroprecent_dump(struct device *dev,
 }
 static DEVICE_ATTR(zeroprecent, (S_IWUGO|S_IRUGO),
 	nui_zeroprecent_show, nui_zeroprecent_dump);
+	
+//nui_proximity_sensitive
+static ssize_t nui_proxi_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", nui_proximity_sens);
+
+	return count;
+}
+
+static ssize_t nui_proxi_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else
+		return -EINVAL;
+	if (nui_proximity_sens != value) {
+		nui_proximity_sens = value;
+		nui_proximity_sensitive(value);
+	}
+	return count;
+}
+static DEVICE_ATTR(proximitysens, (S_IWUGO|S_IRUGO),
+	nui_proxi_show, nui_proxi_dump);
 	
 //Battery Saving mode
 static ssize_t nui_nooc_show(struct device *dev,
@@ -315,37 +347,14 @@ static int __init nuisetting_init(void)
         pr_warn("%s: nui_setting_kobj create_and_add failed\n", __func__);
     }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_nuibrightness.attr);
-    if (rc) {
-        pr_warn("%s: sysfs_create_file failed for nuibrightness\n", __func__);
-    }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_level_short.attr);
-    if (rc) {
-        pr_warn("%s: sysfs_create_file failed for level_short\n", __func__);
-    }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_zeroprecent.attr);
-    if (rc) {
-        pr_warn("%s: sysfs_create_file failed for zeroprecent\n", __func__);
-    }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_nooc.attr);
-    if (rc) {
-        pr_warn("%s: sysfs_create_file failed for nooc\n", __func__);
-    }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_logo.attr);
-    if (rc) {
-        pr_warn("%s: sysfs_create_file failed for logo\n", __func__);
-    }
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camera_key.attr);	
-	if (rc) {
-		pr_warn("dev_attr_camera_key device_create_file failed\n");
-	}
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus_key.attr);	
-	if (rc) {
-		pr_warn("dev_attr_focus_key device_create_file failed\n");
-	}
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_torch.attr);	
-	if (rc) {
-		pr_warn("dev_attr_focus_key device_create_file failed\n");
-	}
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_proximitysens.attr);
 	pr_info(LOGTAG"%s done\n", __func__);
 
 	return 0;

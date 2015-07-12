@@ -39,6 +39,7 @@
 /*MTD-PERIPHERAL-CH-PS_conf00++[*/
 #include <linux/fih_hw_info.h>
 /*MTD-PERIPHERAL-CH-PS_conf00++]*/
+#include <linux/nuisetting.h>
 
 #define D(x...) pr_info(x)
 
@@ -519,6 +520,21 @@ static void psensor_initial_cmd(struct cm36283_info *lpi)
     _cm36283_I2C_Write_Word(lpi->slave_addr, PS_THD, (lpi->ps_close_thd_set <<8)| lpi->ps_away_thd_set);
     
     D("[PS][CM36283] %s, finish\n", __func__);	
+}
+
+void nui_proximity_sensitive(int i) {
+	
+	struct cm36283_info *lpi = lp_info;
+	
+	if(i == 1) {
+		lpi->ps_close_thd_set = 0xa;
+		lpi->ps_away_thd_set = 0x5;
+		_cm36283_I2C_Write_Word(lpi->slave_addr, PS_THD, (lpi->ps_close_thd_set <<8)| lpi->ps_away_thd_set);
+	} else {
+		lpi->ps_away_thd_set = 0x2D;
+		lpi->ps_close_thd_set = 0x31;
+		_cm36283_I2C_Write_Word(lpi->slave_addr, PS_THD, (lpi->ps_close_thd_set <<8)| lpi->ps_away_thd_set);
+	}
 }
 
 static int psensor_enable(struct cm36283_info *lpi)

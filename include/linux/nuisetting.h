@@ -62,4 +62,7 @@ void draw_nui_logo(int logo);
  */
 extern int nui_torch_intensity;
 
+extern int nui_proximity_sens;
+void nui_proximity_sensitive(int i);
+
 #endif	/* _LINUX_NUISETTING_H */
