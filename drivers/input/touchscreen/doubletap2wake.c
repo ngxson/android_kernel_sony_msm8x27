@@ -52,6 +52,7 @@ int dt2w_switch = 0;
 int dt2w_vib = 1;
 bool scr_suspended = false;
 bool nui_report_input = true;
+bool dt2w_debug = false;
 
 /* Read cmdline for dt2w */
 static int __init read_dt2w_cmdline(char *dt2w)
@@ -170,6 +171,30 @@ static ssize_t doubletap2wake_vib_dump(struct device *dev,
 
 static DEVICE_ATTR(doubletap2wake_vib, (S_IWUGO|S_IRUGO),
 	doubletap2wake_vib_show, doubletap2wake_vib_dump);
+	
+static ssize_t dt2w_debug_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+	
+	return count;
+}
+
+static ssize_t dt2w_debug_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	if (sysfs_streq(buf, "0"))
+		dt2w_debug = false;
+	else if (sysfs_streq(buf, "1"))
+		dt2w_debug = true;
+	else
+		return -EINVAL;
+
+	return count;
+}
+
+static DEVICE_ATTR(debug, (S_IWUGO|S_IRUGO),
+	dt2w_debug_show, dt2w_debug_dump);
 
 static ssize_t dt2w_version_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -216,7 +241,7 @@ static int __init doubletap2wake_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_vib\n", __func__);
     }
-
+    rc = sysfs_create_file(android_touch_kobj, &dev_attr_debug.attr);
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&dt2w_early_suspend_handler);
 #endif
