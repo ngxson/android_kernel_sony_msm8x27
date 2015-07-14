@@ -28,6 +28,9 @@ int nui_batt_level = 100;
 int nui_batt_sav = 0;
 int camera_key = 766;
 int focus_key = 528;
+bool key_scroff = false;
+int camera_key_scroff = 766;
+int focus_key_scroff = 528;
 int nui_torch_intensity = 2;
 int nui_proximity_sens = 0;
 
@@ -327,6 +330,112 @@ static ssize_t focus_key_dump(struct device *dev,
 
 static DEVICE_ATTR(focus_key, (S_IWUGO|S_IRUGO),
 	focus_key_show, focus_key_dump);
+	
+// camera key setting scr off
+static ssize_t camera_key_scroff_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", camera_key_scroff);
+}
+
+static ssize_t camera_key_scroff_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+
+	if((val == KEY_POWER) ||
+		(val == KEY_CAMERA_SNAPSHOT) ||
+		(val == KEY_CAMERA_FOCUS) ||
+		(val == KEY_BACK) ||
+		(val == KEY_NEXTSONG) ||
+		(val == KEY_PLAYPAUSE) ||
+		(val == KEY_PREVIOUSSONG) ||
+		(val == KEY_SEARCH) ||
+		(val == KEY_MENU) ||
+		(val == KEY_HOMEPAGE) ||
+		(val == 0)) {
+				camera_key_scroff = val;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(camera_key_scroff, (S_IWUGO|S_IRUGO),
+	camera_key_scroff_show, camera_key_scroff_dump);
+
+// focus key setting scr off
+static ssize_t focus_key_scroff_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", focus_key_scroff);
+}
+
+static ssize_t focus_key_scroff_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	
+	if((val == KEY_POWER) ||
+		(val == KEY_CAMERA_SNAPSHOT) ||
+		(val == KEY_CAMERA_FOCUS) ||
+		(val == KEY_BACK) ||
+		(val == KEY_NEXTSONG) ||
+		(val == KEY_PLAYPAUSE) ||
+		(val == KEY_PREVIOUSSONG) ||
+		(val == KEY_SEARCH) ||
+		(val == KEY_MENU) ||
+		(val == KEY_HOMEPAGE) ||
+		(val == 0)) {
+				focus_key_scroff = val;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(focus_key_scroff, (S_IWUGO|S_IRUGO),
+	focus_key_scroff_show, focus_key_scroff_dump);
+	
+// key setting scr off
+static ssize_t key_scroff_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", key_scroff);
+}
+
+static ssize_t key_scroff_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	
+	if(val == 1) {
+			key_scroff = true;
+		} else if (val == 0) {
+			key_scroff = false;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(key_scroff, (S_IWUGO|S_IRUGO),
+	key_scroff_show, key_scroff_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -353,6 +462,9 @@ static int __init nuisetting_init(void)
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_logo.attr);
     rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camera_key.attr);	
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus_key.attr);	
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_camera_key_scroff.attr);	
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus_key_scroff.attr);	
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_key_scroff.attr);	
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_torch.attr);	
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_proximitysens.attr);
 	pr_info(LOGTAG"%s done\n", __func__);

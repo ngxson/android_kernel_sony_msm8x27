@@ -32,6 +32,7 @@
 #include <../../video/msm/msm_fb.h>
 
 #include <linux/nuisetting.h>
+#include <linux/input/doubletap2wake.h>
 
 struct wakeup_data
 {
@@ -347,6 +348,8 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int btn_code = button->code;
+	int m_camera_key;
+	int m_focus_key;
 	//cputime64_t time_now = ktime_to_ms(ktime_get());
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
@@ -354,16 +357,23 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
 	//for camera and focus key
+	if ((key_scroff) && (scr_suspended)) {
+		m_camera_key = camera_key_scroff;
+		m_focus_key = focus_key_scroff;
+	} else {
+		m_camera_key = camera_key;
+		m_focus_key = focus_key;
+	}
 	if(btn_code == 766) {
-		if((camera_key == 766) || (camera_key == 528)) {
-			input_event(input, type, camera_key, !!state);
+		if((m_camera_key == 766) || (m_camera_key == 528)) {
+			input_event(input, type, m_camera_key, !!state);
 			input_sync(input);
-		} else btn_press(camera_key, !!state);
+		} else btn_press(m_camera_key, !!state);
 	} else if(btn_code == 528) {
-		if((focus_key == 528) || (focus_key == 766)) {
-			input_event(input, type, focus_key, !!state);
+		if((m_focus_key == 528) || (m_focus_key == 766)) {
+			input_event(input, type, m_focus_key, !!state);
 			input_sync(input);
-		} else btn_press(focus_key, !!state);
+		} else btn_press(m_focus_key, !!state);
 	} else {
 		input_event(input, type, btn_code, !!state);
 		input_sync(input);

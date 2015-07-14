@@ -45,10 +45,13 @@ extern int nui_old_freq;
 void nui_batt_sav_mode(int m);
 
 /*
- * Camera/focus settings
+ * Camera/focus key settings
  */
 extern int camera_key;
 extern int focus_key;
+extern bool key_scroff;
+extern int camera_key_scroff;
+extern int focus_key_scroff;
 void btn_press(int i, bool b);
 
 //logo tool
