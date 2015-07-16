@@ -68,4 +68,9 @@ extern int nui_torch_intensity;
 extern int nui_proximity_sens;
 void nui_proximity_sensitive(int i);
 
+/*
+ * Lock brightness
+ */
+extern int brlock;
+
 #endif	/* _LINUX_NUISETTING_H */

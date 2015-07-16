@@ -15,6 +15,7 @@
 #include <linux/workqueue.h>
 #include <linux/input.h>
 #include <linux/nuisetting.h>
+#include <../video/msm/msm_fb.h>
 
 #define DRIVER_AUTHOR "Nguyen Xuan Son <thichthat@gmail.com>"
 #define DRIVER_DESCRIPTION "Settings for Nui kernel"
@@ -33,6 +34,7 @@ int camera_key_scroff = 766;
 int focus_key_scroff = 528;
 int nui_torch_intensity = 2;
 int nui_proximity_sens = 0;
+int brlock = 0;
 
 /*
  * SYSFS stuff below here
@@ -436,6 +438,34 @@ static ssize_t key_scroff_dump(struct device *dev,
 
 static DEVICE_ATTR(key_scroff, (S_IWUGO|S_IRUGO),
 	key_scroff_show, key_scroff_dump);
+	
+// lock brightness
+static ssize_t brlock_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", brlock);
+}
+
+static ssize_t brlock_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	
+	if((val > -1) && (val < 256)) {
+			brlock = val;
+			if (val != 0) nui_set_brightness(val);
+	} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+static DEVICE_ATTR(brlock, (S_IWUGO|S_IRUGO),
+	brlock_show, brlock_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -467,6 +497,7 @@ static int __init nuisetting_init(void)
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_key_scroff.attr);	
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_torch.attr);	
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_proximitysens.attr);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_brlock.attr);
 	pr_info(LOGTAG"%s done\n", __func__);
 
 	return 0;

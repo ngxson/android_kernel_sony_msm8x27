@@ -306,9 +306,19 @@ if (nbr_switch == 0) {
 		bl_lvl = 1;
 	#endif
 
+if (brlock == 0) {
 	down(&mfd->sem);
 	msm_fb_set_backlight(mfd, bl_lvl);
 	up(&mfd->sem);
+} else {
+	down(&mfd->sem);
+	if (bl_lvl < 2) {
+		msm_fb_set_backlight(mfd, bl_lvl);
+	} else {
+		msm_fb_set_backlight(mfd, brlock);
+	}
+	up(&mfd->sem);
+}
 }
 
 static struct led_classdev backlight_led = {
