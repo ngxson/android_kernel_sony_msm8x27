@@ -32,7 +32,8 @@
 #include <../../video/msm/msm_fb.h>
 
 #include <linux/nuisetting.h>
-#include <linux/input/doubletap2wake.h>
+
+static bool scr_suspended = false;
 
 struct wakeup_data
 {
@@ -758,14 +759,16 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
 
 	return 0;
 }
+
 #ifdef CONFIG_PM
 static int gpio_keys_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
-	struct gpiokey_file_node *file_node = ( ( struct gpio_keys_drvdata* )platform_get_drvdata(pdev) )->file_node;
+	//struct gpiokey_file_node *file_node = ( ( struct gpio_keys_drvdata* )platform_get_drvdata(pdev) )->file_node;
 	int i;
 
+	scr_suspended = true;
 	if (device_may_wakeup(&pdev->dev)) {
 		for (i = 0; i < pdata->nbuttons; i++) {
 			struct gpio_keys_button *button = &pdata->buttons[i];
@@ -785,11 +788,11 @@ static int gpio_keys_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gpio_keys_drvdata *ddata = platform_get_drvdata(pdev);
 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
-	struct gpiokey_file_node *file_node = ddata->file_node;
+	//struct gpiokey_file_node *file_node = ddata->file_node;
 	int i;
 
+	scr_suspended = false;
 	for (i = 0; i < pdata->nbuttons; i++) {
-
 		struct gpio_keys_button *button = &pdata->buttons[i];
 		//if ( file_node->dynamic_wakeup && ( file_node->dynamic_wakeup + i )->wakeup && device_may_wakeup(&pdev->dev)) {
 			int irq = gpio_to_irq(button->gpio);
