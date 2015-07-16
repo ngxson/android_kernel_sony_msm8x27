@@ -50,9 +50,12 @@
 /* Resources */
 int dt2w_switch = 0;
 int dt2w_vib = 1;
+int s2w_switch = 0;
 bool scr_suspended = false;
 bool nui_report_input = true;
 bool dt2w_debug = false;
+bool no_suspend_touch = false;
+int s2w_oneswipe = 0;
 
 /* Read cmdline for dt2w */
 static int __init read_dt2w_cmdline(char *dt2w)
@@ -77,28 +80,6 @@ static int __init read_dt2w_cmdline(char *dt2w)
 }
 __setup("dt2w=", read_dt2w_cmdline);
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void dt2w_early_suspend(struct early_suspend *h) {
-	scr_suspended = true;
-	doubletap2wake_reset();
-	if(dt2w_switch>0) nui_report_input = false;
-	else nui_report_input = true;
-	//printk( "ngxson : dt2w_early_suspend\n");
-}
-
-static void dt2w_late_resume(struct early_suspend *h) {
-	scr_suspended = false;
-	doubletap2wake_reset();
-	nui_report_input = true;
-	//printk( "ngxson : dt2w_late_resume\n");
-}
-
-static struct early_suspend dt2w_early_suspend_handler = {
-	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN,
-	.suspend = dt2w_early_suspend,
-	.resume = dt2w_late_resume,
-};
-#endif
 /*
  * SYSFS stuff below here
  */
@@ -134,6 +115,8 @@ static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 		}
 		if (!scr_suspended) {
 			dt2w_switch = value;
+			if((s2w_switch > 0) || (dt2w_switch > 0)) no_suspend_touch = true;
+			else no_suspend_touch = false;
 		}
 	}
 	return count;
@@ -196,24 +179,67 @@ static ssize_t dt2w_debug_dump(struct device *dev,
 static DEVICE_ATTR(debug, (S_IWUGO|S_IRUGO),
 	dt2w_debug_show, dt2w_debug_dump);
 
-static ssize_t dt2w_version_show(struct device *dev,
+static ssize_t s2w_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	size_t count = 0;
 
-	count += sprintf(buf, "%s\n", DRIVER_VERSION);
+	count += sprintf(buf, "%d\n", s2w_switch);
 
 	return count;
 }
 
-static ssize_t dt2w_version_dump(struct device *dev,
+static ssize_t s2w_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
+	int value;
+
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
+		value = 1;
+	else
+		return -EINVAL;
+	if (s2w_switch != value) {
+		if (!scr_suspended) {
+			s2w_switch = value;
+			if((s2w_switch > 0) || (dt2w_switch > 0)) no_suspend_touch = true;
+			else no_suspend_touch = false;
+		}
+	}
 	return count;
 }
 
-static DEVICE_ATTR(doubletap2wake_version, (S_IWUGO|S_IRUGO),
-	dt2w_version_show, dt2w_version_dump);
+static DEVICE_ATTR(swipe2wake, (S_IWUGO|S_IRUGO),
+	s2w_show, s2w_dump);
+	
+//one swipe unlock
+static ssize_t s2w_oneswipe_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+
+	count += sprintf(buf, "%d\n", s2w_oneswipe);
+
+	return count;
+}
+
+static ssize_t s2w_oneswipe_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+
+	if (sysfs_streq(buf, "0"))
+		s2w_oneswipe = 0;
+	else if (sysfs_streq(buf, "1"))
+		s2w_oneswipe = 1;
+	else
+		return -EINVAL;
+
+	return count;
+}
+
+static DEVICE_ATTR(swipe2wake_oneswipe, (S_IWUGO|S_IRUGO),
+	s2w_oneswipe_show, s2w_oneswipe_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -233,18 +259,19 @@ static int __init doubletap2wake_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake\n", __func__);
     }
-    rc = sysfs_create_file(android_touch_kobj, &dev_attr_doubletap2wake_version.attr);
+    rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2wake.attr);
     if (rc) {
-        pr_warn("%s: sysfs_create_file failed for doubletap2wake_version\n", __func__);
+        pr_warn("%s: sysfs_create_file failed for swipe2wake\n", __func__);
     }
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_doubletap2wake_vib.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_vib\n", __func__);
     }
+    rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2wake_oneswipe.attr);
+    if (rc) {
+        pr_warn("%s: sysfs_create_file failed for swipe2wake_oneswipe\n", __func__);
+    }
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_debug.attr);
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	register_early_suspend(&dt2w_early_suspend_handler);
-#endif
 
 	return 0;
 }
@@ -252,9 +279,6 @@ static int __init doubletap2wake_init(void)
 static void __exit doubletap2wake_exit(void)
 {
     kobject_del(android_touch_kobj);
-#ifdef CONFIG_HAS_EARLYSUSPEND
-    unregister_early_suspend(&dt2w_early_suspend_handler);
-#endif
 	return;
 }
 

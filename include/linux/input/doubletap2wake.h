@@ -22,10 +22,12 @@
 #define _LINUX_DOUBLETAP2WAKE_H
 
 extern int dt2w_switch;
-extern bool scr_suspended;
+extern int s2w_switch;
 extern int dt2w_vib;
 extern bool nui_report_input;
 extern bool dt2w_debug;
+extern bool no_suspend_touch;
+extern int s2w_oneswipe;
 void doubletap2wake_reset(void);
 
 #endif	/* _LINUX_DOUBLETAP2WAKE_H */
