@@ -30,6 +30,7 @@
 #include <linux/hrtimer.h>
 #include <asm-generic/cputime.h>
 #include <../../video/msm/msm_fb.h>
+#include <linux/earlysuspend.h>
 
 #include <linux/nuisetting.h>
 
@@ -768,7 +769,6 @@ static int gpio_keys_suspend(struct device *dev)
 	//struct gpiokey_file_node *file_node = ( ( struct gpio_keys_drvdata* )platform_get_drvdata(pdev) )->file_node;
 	int i;
 
-	scr_suspended = true;
 	if (device_may_wakeup(&pdev->dev)) {
 		for (i = 0; i < pdata->nbuttons; i++) {
 			struct gpio_keys_button *button = &pdata->buttons[i];
@@ -791,7 +791,6 @@ static int gpio_keys_resume(struct device *dev)
 	//struct gpiokey_file_node *file_node = ddata->file_node;
 	int i;
 
-	scr_suspended = false;
 	for (i = 0; i < pdata->nbuttons; i++) {
 		struct gpio_keys_button *button = &pdata->buttons[i];
 		//if ( file_node->dynamic_wakeup && ( file_node->dynamic_wakeup + i )->wakeup && device_may_wakeup(&pdev->dev)) {
@@ -812,6 +811,22 @@ static const struct dev_pm_ops gpio_keys_pm_ops = {
 };
 #endif
 
+static void key_early_suspend(struct early_suspend *h) {
+	scr_suspended = true;
+}
+
+static void key_late_resume(struct early_suspend *h) {
+	scr_suspended = false;
+}
+
+static struct early_suspend key_early_suspend_handler = {
+	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN,
+	.suspend = key_early_suspend,
+	.resume = key_late_resume,
+};
+
+
+
 static struct platform_driver gpio_keys_device_driver = {
 	.probe		= gpio_keys_probe,
 	.remove		= __devexit_p(gpio_keys_remove),
@@ -826,11 +841,13 @@ static struct platform_driver gpio_keys_device_driver = {
 
 static int __init gpio_keys_init(void)
 {
+	register_early_suspend(&key_early_suspend_handler);
 	return platform_driver_register(&gpio_keys_device_driver);
 }
 
 static void __exit gpio_keys_exit(void)
 {
+	unregister_early_suspend(&key_early_suspend_handler);
 	platform_driver_unregister(&gpio_keys_device_driver);
 }
 
