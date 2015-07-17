@@ -41,9 +41,9 @@
 #include <linux/wakelock.h>
 
 /* Version, author, desc, etc */
-#define DRIVER_AUTHOR "Dennis Rassmann <showp1984@gmail.com>"
-#define DRIVER_DESCRIPTION "DoubleTap2Wake for almost any device"
-#define DRIVER_VERSION "1.7"
+#define DRIVER_AUTHOR "Ngxson"
+#define DRIVER_DESCRIPTION "DoubleTap2Wake and Swipe2wake for Sony Xperia M"
+#define DRIVER_VERSION "6.9 just kidding"
 #define LOGTAG "[doubletap2wake]: "
 
 
