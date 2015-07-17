@@ -1,6 +1,6 @@
 #!/bin/bash
 THIS_USER=ngxson
-GCC_TOOLCHAIN=arm-cortex-linux-gnueabi-linaro_4.9.4-2015.06
+GCC_TOOLCHAIN=arm-cortex_a15-linux-gnueabihf-linaro_4.9.4-2015.06
 
 rm "/home/$THIS_USER/out/arch/arm/boot/zImage"
 rm "/home/$THIS_USER/zImage"
