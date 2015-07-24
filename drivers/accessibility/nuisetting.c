@@ -285,6 +285,8 @@ static ssize_t camera_key_dump(struct device *dev,
 		(val == KEY_SEARCH) ||
 		(val == KEY_MENU) ||
 		(val == KEY_HOMEPAGE) ||
+		(val == KEY_VOLUMEDOWN) ||
+		(val == KEY_VOLUMEUP) ||
 		(val == 0)) {
 				camera_key = val;
 		} else return -EINVAL;
@@ -323,6 +325,8 @@ static ssize_t focus_key_dump(struct device *dev,
 		(val == KEY_SEARCH) ||
 		(val == KEY_MENU) ||
 		(val == KEY_HOMEPAGE) ||
+		(val == KEY_VOLUMEDOWN) ||
+		(val == KEY_VOLUMEUP) ||
 		(val == 0)) {
 				focus_key = val;
 		} else return -EINVAL;
@@ -443,6 +447,7 @@ static DEVICE_ATTR(key_scroff, (S_IWUGO|S_IRUGO),
 static ssize_t brlock_show(struct device *dev,
 				    struct device_attribute *attr, char *buf)
 {
+	
 	return snprintf(buf, PAGE_SIZE, "%d\n", brlock);
 }
 
