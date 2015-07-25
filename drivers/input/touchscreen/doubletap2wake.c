@@ -214,6 +214,7 @@ static DEVICE_ATTR(swipe2wake, (S_IWUGO|S_IRUGO),
 	s2w_show, s2w_dump);
 	
 //one swipe unlock
+/*
 static ssize_t s2w_oneswipe_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -240,6 +241,7 @@ static ssize_t s2w_oneswipe_dump(struct device *dev,
 
 static DEVICE_ATTR(swipe2wake_oneswipe, (S_IWUGO|S_IRUGO),
 	s2w_oneswipe_show, s2w_oneswipe_dump);
+*/
 
 /*
  * INIT / EXIT stuff below here
@@ -267,10 +269,12 @@ static int __init doubletap2wake_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_vib\n", __func__);
     }
+    /*
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2wake_oneswipe.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for swipe2wake_oneswipe\n", __func__);
     }
+    */
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_debug.attr);
 
 	return 0;
