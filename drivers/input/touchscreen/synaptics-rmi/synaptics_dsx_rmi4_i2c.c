@@ -1009,7 +1009,7 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	 * the number of finger status registers to read is:
 	 * register_count = ceil(max_num_of_fingers / 4)
 	 */
-	//fingers_supported = fhandler->num_of_data_points;
+	fingers_supported = fhandler->num_of_data_points;
 	num_of_finger_status_regs = (fingers_supported + 3) / 4;
 	data_addr = fhandler->full_addr.data_base;
 	data_reg_blk_size = fhandler->size_of_data_register_block;
@@ -1021,8 +1021,7 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	if (retval < 0)
 		return 0;
 
-	//for (finger = 0; finger < fingers_supported; finger++) {
-	for (finger = 0; finger < 5; finger++) {
+	for (finger = 0; finger < fingers_supported; finger++) {
 		reg_index = finger / 4;
 		finger_shift = (finger % 4) * 2;
 		finger_status = (finger_status_reg[reg_index] >> finger_shift)
@@ -1449,17 +1448,17 @@ static void dt2w_irq(struct work_struct * dt2w_irq_work) {
 		touch_count = synaptics_rmi4_sensor_report(dt2w_rmi4_data);
 	}*/
 		do {
-			touch_count = synaptics_rmi4_sensor_report(rmi4_data);
+			touch_count = synaptics_rmi4_sensor_report(dt2w_rmi4_data);
 	
 			if (touch_count > 0) {
 				i++;
-				wait_event_timeout(rmi4_data->wait,
-						rmi4_data->touch_stopped,
+				wait_event_timeout(dt2w_rmi4_data->wait,
+						dt2w_rmi4_data->touch_stopped,
 						msecs_to_jiffies(POLLING_PERIOD));
 			} else {
 				break;
 			}
-		} while ((!rmi4_data->touch_stopped)&&(i<10));
+		} while ((!dt2w_rmi4_data->touch_stopped)&&(i<10));
 	mutex_unlock(&irqdt2w);
 	return;
 }
