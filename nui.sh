@@ -38,7 +38,7 @@ if [ -a "/home/$THIS_USER/out/arch/arm/boot/zImage" ]; then
 	RAMDISK_DIR="/home/$THIS_USER/nuik/ramdisk.tar.gz"
 	BOOTIMG_OUT_DIR="/home/$THIS_USER/nui.img"
 	BOOTIMG_BK_DIR="/home/$THIS_USER/nui_backup.img"
-	BOARD_KERNEL_CMDLINE="panic=3 console=ttyHSL0,115200,n8 androidboot.hardware=qcom user_debug=23 msm_rtb.filter=0x3F ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1 androidboot.selinux=permissive"
+	BOARD_KERNEL_CMDLINE="panic=3 console=ttyHSL0,115200,n8 androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x3F ehci-hcd.park=3 androidboot.bootdevice=msm_sdcc.1"
 	
 	mv "$BOOTIMG_OUT_DIR" "$BOOTIMG_BK_DIR"
 	
