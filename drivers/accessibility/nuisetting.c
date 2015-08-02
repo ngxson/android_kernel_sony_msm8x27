@@ -216,6 +216,10 @@ static ssize_t nui_nooc_dump(struct device *dev,
 		value = 0;
 	else if (sysfs_streq(buf, "1"))
 		value = 1;
+	else if (sysfs_streq(buf, "2"))
+		value = 2;
+	else if (sysfs_streq(buf, "3"))
+		value = 3;
 	else
 		return -EINVAL;
 	if (nui_batt_sav != value) {

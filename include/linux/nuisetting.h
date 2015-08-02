@@ -10,6 +10,8 @@
 #ifndef _LINUX_NUISETTING_H
 #define _LINUX_NUISETTING_H
 #define NUI_BATT_SAV_FREQ_LEV	7
+#define NUI_BATT_SAV_FREQ_LEV_TWO	9
+#define NUI_BATT_SAV_FREQ_LEV_THREE	11
 
 extern int nui_batt_level;
 
@@ -39,6 +41,8 @@ extern int zero_precent_switch;
  * Battery saving mode (no overclock)
  * 0 for disable
  * 1 for enable (default)
+ * 2 for 1.4GHz
+ * 3 for 1.2GHz
  */
 extern int nui_batt_sav;
 extern int nui_old_freq;

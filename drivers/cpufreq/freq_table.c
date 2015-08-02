@@ -19,6 +19,8 @@
  *                     FREQUENCY TABLE HELPERS                       *
  *********************************************************************/
 int nui_old_freq = 1134000;
+int nui_old_freq_two = 1350000;
+int nui_old_freq_three = 1620000;
 
 
 int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
@@ -30,6 +32,10 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
 
 	if (table[NUI_BATT_SAV_FREQ_LEV].frequency != CPUFREQ_TABLE_END)
 		nui_old_freq = table[NUI_BATT_SAV_FREQ_LEV].frequency;
+	if (table[NUI_BATT_SAV_FREQ_LEV_TWO].frequency != CPUFREQ_TABLE_END)
+		nui_old_freq_two = table[NUI_BATT_SAV_FREQ_LEV_TWO].frequency;
+	if (table[NUI_BATT_SAV_FREQ_LEV_THREE].frequency != CPUFREQ_TABLE_END)
+		nui_old_freq_three = table[NUI_BATT_SAV_FREQ_LEV_THREE].frequency;
 
 	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
 		unsigned int freq = table[i].frequency;
@@ -223,16 +229,28 @@ void nui_tune_cpu(int cpu, int m) {
 
 	if (table[NUI_BATT_SAV_FREQ_LEV].frequency != CPUFREQ_TABLE_END)
 		nui_old_freq = table[NUI_BATT_SAV_FREQ_LEV].frequency;
+	if (table[NUI_BATT_SAV_FREQ_LEV_TWO].frequency != CPUFREQ_TABLE_END)
+		nui_old_freq_two = table[NUI_BATT_SAV_FREQ_LEV_TWO].frequency;
+	if (table[NUI_BATT_SAV_FREQ_LEV_THREE].frequency != CPUFREQ_TABLE_END)
+		nui_old_freq_three = table[NUI_BATT_SAV_FREQ_LEV_THREE].frequency;
 
 	if(m == 1) {
 		table[NUI_BATT_SAV_FREQ_LEV].frequency = CPUFREQ_TABLE_END;
+	} else if(m == 2) {
+		table[NUI_BATT_SAV_FREQ_LEV_TWO].frequency = CPUFREQ_TABLE_END;
+	} else if(m == 3) {
+		table[NUI_BATT_SAV_FREQ_LEV_THREE].frequency = CPUFREQ_TABLE_END;
 	} else {
 		table[NUI_BATT_SAV_FREQ_LEV].frequency = nui_old_freq;
+		table[NUI_BATT_SAV_FREQ_LEV_TWO].frequency = nui_old_freq_two;
+		table[NUI_BATT_SAV_FREQ_LEV_THREE].frequency = nui_old_freq_three;
 	}
 }
 
 void nui_batt_sav_mode(int m)
 {
+	nui_tune_cpu(0, 0);
+	nui_tune_cpu(1, 0);
 	nui_tune_cpu(0, m);
 	nui_tune_cpu(1, m);
 }
