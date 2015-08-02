@@ -990,8 +990,8 @@ static int fe_path_get(struct snd_soc_pcm_runtime *fe,
 
 	list = kzalloc(sizeof(struct snd_soc_dapm_widget_list) +
 			sizeof(struct snd_soc_dapm_widget *), GFP_KERNEL);
-	if (list == NULL)
-		return -ENOMEM;
+	//if (list == NULL)
+	//	return -ENOMEM;
 
 	/* get number of valid DAI paths and their widgets */
 	paths = snd_soc_dapm_dai_get_connected_widgets(cpu_dai, stream, &list);
@@ -2440,7 +2440,7 @@ int soc_dpcm_fe_dai_open(struct snd_pcm_substream *fe_substream)
 	if (fe_path_get(fe, stream, &list) <= 0) {
 		pr_warn_ratelimited("asoc: %s no valid %s route from source to sink\n",
 			fe->dai_link->name, stream ? "capture" : "playback");
-			return -EINVAL;
+			//return -EINVAL;
 	}
 
 	/* calculate valid and active FE <-> BE dpcm_paramss */
