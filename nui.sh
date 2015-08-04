@@ -14,6 +14,10 @@ GCC_PREFIX=arm-cortex_a15-linux-gnueabihf
 
 rm "/home/$THIS_USER/out/arch/arm/boot/zImage"
 
+if [ ! -d "/home/$THIS_USER/out" ]; then
+	mkdir "/home/$THIS_USER/out"
+fi
+
 export ARCH=arm
 export CROSS_COMPILE="/home/$THIS_USER/$GCC_TOOLCHAIN/bin/$GCC_PREFIX-"
 
