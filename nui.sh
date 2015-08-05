@@ -23,7 +23,7 @@ export CROSS_COMPILE="/home/$THIS_USER/$GCC_TOOLCHAIN/bin/$GCC_PREFIX-"
 
 #make the zImage
 make O="/home/$THIS_USER/out" cyanogenmod_nicki_defconfig
-make O="/home/$THIS_USER/out" -j5
+make O="/home/$THIS_USER/out" -j2
 
 MODULES_DIR="/home/$THIS_USER/modules"
 OUT_DIR="/home/$THIS_USER/out"
