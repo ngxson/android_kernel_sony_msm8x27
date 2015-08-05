@@ -26,6 +26,7 @@
 #include <linux/syscore_ops.h>
 #include <linux/rtc.h>
 #include <trace/events/power.h>
+#include <linux/input/doubletap2wake.h>
 
 #include "power.h"
 
@@ -147,6 +148,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	}
 
 	error = dpm_suspend_end(PMSG_SUSPEND);
+	nui_suspend = false;
 	if (error) {
 		printk(KERN_ERR "PM: Some devices failed to power down\n");
 		goto Platform_finish;
@@ -154,6 +156,7 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	if (suspend_ops->prepare_late) {
 		error = suspend_ops->prepare_late();
+		nui_suspend = false;
 		if (error)
 			goto Platform_wake;
 	}
@@ -184,15 +187,18 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	BUG_ON(irqs_disabled());
 
  Enable_cpus:
+ 	nui_suspend = false;
 	enable_nonboot_cpus();
 
  Platform_wake:
+ 	nui_suspend = false;
 	if (suspend_ops->wake)
 		suspend_ops->wake();
 
 	dpm_resume_start(PMSG_RESUME);
 
  Platform_finish:
+ 	nui_suspend = false;
 	if (suspend_ops->finish)
 		suspend_ops->finish();
 
@@ -220,11 +226,13 @@ int suspend_devices_and_enter(suspend_state_t state)
 	suspend_console();
 	suspend_test_start();
 	error = dpm_suspend_start(PMSG_SUSPEND);
+	nui_suspend = false;
 	if (error) {
 		printk(KERN_ERR "PM: Some devices failed to suspend\n");
 		goto Recover_platform;
 	}
 	suspend_test_finish("suspend devices");
+	nui_suspend = false;
 	if (suspend_test(TEST_DEVICES))
 		goto Recover_platform;
 
@@ -232,19 +240,23 @@ int suspend_devices_and_enter(suspend_state_t state)
 		error = suspend_enter(state, &wakeup);
 	} while (!error && !wakeup
 		&& suspend_ops->suspend_again && suspend_ops->suspend_again());
+	nui_suspend = false;
 
  Resume_devices:
+ 	nui_suspend = false;
 	suspend_test_start();
 	dpm_resume_end(PMSG_RESUME);
 	suspend_test_finish("resume devices");
 	resume_console();
  Close:
+ 	nui_suspend = false;
 	if (suspend_ops->end)
 		suspend_ops->end();
 	trace_machine_suspend(PWR_EVENT_EXIT);
 	return error;
 
  Recover_platform:
+ 	nui_suspend = false;
 	if (suspend_ops->recover)
 		suspend_ops->recover();
 	goto Resume_devices;
@@ -258,6 +270,7 @@ int suspend_devices_and_enter(suspend_state_t state)
  */
 static void suspend_finish(void)
 {
+	nui_suspend = false;
 	suspend_thaw_processes();
 	pm_notifier_call_chain(PM_POST_SUSPEND);
 	pm_restore_console();
@@ -294,6 +307,7 @@ static int enter_state(suspend_state_t state)
 	pm_restrict_gfp_mask();
 	error = suspend_devices_and_enter(state);
 	pm_restore_gfp_mask();
+	nui_suspend = false;
 
  Finish:
 	pr_debug("PM: Finishing wakeup.\n");
@@ -330,6 +344,7 @@ int pm_suspend(suspend_state_t state)
 		return -EINVAL;
 
 	pm_suspend_marker("entry");
+	nui_suspend = true;
 	error = enter_state(state);
 	if (error) {
 		suspend_stats.fail++;
@@ -338,6 +353,7 @@ int pm_suspend(suspend_state_t state)
 		suspend_stats.success++;
 	}
 	pm_suspend_marker("exit");
+	nui_suspend = false;
 	return error;
 }
 EXPORT_SYMBOL(pm_suspend);

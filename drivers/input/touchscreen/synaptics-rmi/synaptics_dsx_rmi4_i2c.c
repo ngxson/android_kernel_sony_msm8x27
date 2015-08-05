@@ -90,6 +90,8 @@
 #define S2W_TIMEOUT_MAX         1500
 #define S2W_DELTA_X               250
 
+bool nui_suspend = false;
+
 static cputime64_t tap_time_pre = 0;
 static int x_pre = 0, y_pre = 0;
 
@@ -1482,8 +1484,10 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 	if((no_suspend_touch)&&(scr_suspended)) {
 		wake_lock_timeout(&dt2w_wake_lock, 1000);
 		//wake_lock(&dt2w_wake_lock);
-		dt2w_rmi4_data = data;
-		schedule_work(&dt2w_irq_work);
+		if(!nui_suspend) {
+			dt2w_rmi4_data = data;
+			schedule_work(&dt2w_irq_work);
+		}
 	} else {
 		do {
 			touch_count = synaptics_rmi4_sensor_report(rmi4_data);
