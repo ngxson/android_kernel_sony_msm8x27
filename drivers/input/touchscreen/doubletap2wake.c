@@ -51,6 +51,7 @@
 int dt2w_switch = 0;
 int dt2w_vib = 1;
 int s2w_switch = 0;
+int s2m = 0;
 bool scr_suspended = false;
 bool nui_report_input = true;
 bool dt2w_debug = false;
@@ -115,7 +116,7 @@ static ssize_t dt2w_doubletap2wake_dump(struct device *dev,
 		}
 		if (!scr_suspended) {
 			dt2w_switch = value;
-			if((s2w_switch > 0) || (dt2w_switch > 0)) no_suspend_touch = true;
+			if((s2w_switch > 0) || (dt2w_switch > 0) || (s2m > 0)) no_suspend_touch = true;
 			else no_suspend_touch = false;
 		}
 	}
@@ -203,7 +204,7 @@ static ssize_t s2w_dump(struct device *dev,
 	if (s2w_switch != value) {
 		if (!scr_suspended) {
 			s2w_switch = value;
-			if((s2w_switch > 0) || (dt2w_switch > 0)) no_suspend_touch = true;
+			if((s2w_switch > 0) || (dt2w_switch > 0) || (s2m > 0)) no_suspend_touch = true;
 			else no_suspend_touch = false;
 		}
 	}
@@ -213,35 +214,34 @@ static ssize_t s2w_dump(struct device *dev,
 static DEVICE_ATTR(swipe2wake, (S_IWUGO|S_IRUGO),
 	s2w_show, s2w_dump);
 	
-//one swipe unlock
-/*
-static ssize_t s2w_oneswipe_show(struct device *dev,
+//media control
+static ssize_t s2m_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	size_t count = 0;
-
-	count += sprintf(buf, "%d\n", s2w_oneswipe);
-
+	count += sprintf(buf, "%d\n", s2m);
 	return count;
 }
 
-static ssize_t s2w_oneswipe_dump(struct device *dev,
+static ssize_t s2m_dump(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
 
 	if (sysfs_streq(buf, "0"))
-		s2w_oneswipe = 0;
+		s2m = 0;
 	else if (sysfs_streq(buf, "1"))
-		s2w_oneswipe = 1;
+		s2m = 1;
 	else
 		return -EINVAL;
+		
+	if((s2w_switch > 0) || (dt2w_switch > 0) || (s2m > 0)) no_suspend_touch = true;
+	else no_suspend_touch = false;
 
 	return count;
 }
 
-static DEVICE_ATTR(swipe2wake_oneswipe, (S_IWUGO|S_IRUGO),
-	s2w_oneswipe_show, s2w_oneswipe_dump);
-*/
+static DEVICE_ATTR(swipe2media, (S_IWUGO|S_IRUGO),
+	s2m_show, s2m_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -269,12 +269,10 @@ static int __init doubletap2wake_init(void)
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_vib\n", __func__);
     }
-    /*
-    rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2wake_oneswipe.attr);
+    rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2media.attr);
     if (rc) {
-        pr_warn("%s: sysfs_create_file failed for swipe2wake_oneswipe\n", __func__);
+        pr_warn("%s: sysfs_create_file failed for swipe2media\n", __func__);
     }
-    */
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_debug.attr);
 
 	return 0;

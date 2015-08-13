@@ -24,6 +24,7 @@
 extern int dt2w_switch;
 extern int s2w_switch;
 extern int dt2w_vib;
+extern int s2m;
 extern bool nui_report_input;
 extern bool dt2w_debug;
 extern bool no_suspend_touch;

@@ -112,6 +112,11 @@ static int s2w_x = 0;
 static bool s2w_finger = false;
 static bool s2w_scron = false;
 static bool scr_suspended = false;
+//s2m
+static int s2m_tap_time_pre = 0;
+static int s2m_y = 0;
+static bool s2m_right = true;
+static bool s2m_finger = false;
 //static bool nui_enabled_irq = false;
 //end
 
@@ -450,6 +455,53 @@ void s2w_reset(void) {
 	s2w_x = 0;
 	s2w_finger = false;
 }
+
+//s2m
+void s2m_reset(void) {
+	s2m_finger = false;
+	s2m_y = 0;
+	s2m_tap_time_pre = 0;
+	s2m_right = true;
+}
+
+static void mediakey_press(struct work_struct * doubletap2wake_presspwr_work) {
+	int key_code_m;
+	
+	if (!mutex_trylock(&pwrkeyworklock))
+		return;
+	if(s2m_right) key_code_m = KEY_NEXTSONG;
+	else key_code_m = KEY_PREVIOUSSONG;
+	input_event(doubletap2wake_pwrdev, EV_KEY, key_code_m, 1);
+	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
+	msleep(D2W_PWRKEY_DUR);
+	input_event(doubletap2wake_pwrdev, EV_KEY, key_code_m, 0);
+	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
+	s2m_reset();
+	mutex_unlock(&pwrkeyworklock);
+	return;
+}
+static DECLARE_WORK(mediakey_press_work, mediakey_press);
+
+void s2m_detect(int x, int y) {
+	if(s2m_right) {
+		if ((abs(y - s2m_y) < S2W_DELTA_X) && (x > 256) &&
+				((ktime_to_ms(ktime_get()) - s2m_tap_time_pre) < S2W_TIMEOUT_MAX) ) {
+			if (x < 512) {
+				s2m_finger = false;
+				schedule_work(&mediakey_press_work);
+			}
+		} else s2m_reset();
+	} else {
+		if ((abs(y - s2m_y) < S2W_DELTA_X) && (x < 768) &&
+				((ktime_to_ms(ktime_get()) - s2m_tap_time_pre) < S2W_TIMEOUT_MAX) ) {
+			if (x > 512) {
+				s2m_finger = false;
+				schedule_work(&mediakey_press_work);
+			}
+		} else s2m_reset();
+	}
+}
+
 //end
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -735,6 +787,26 @@ if (nui_report_input) {
 					if (dt2w_debug) printk("ngxson: s2w x=%d y=%d\n", touch_info->x, touch_info->y);
 					s2w_reset();
 				}
+				
+				//media control
+				if((state_down) && (scr_suspended) && (s2m > 0)) {
+					if(!s2m_finger) {
+						if((finger>0) || dt2w_2fgr || dt2w_3fgr || ((touch_info->y) > 256)) {
+							s2m_reset();
+						} else if (((touch_info->x) > 128) && ((touch_info->x) < 896)) {
+							s2m_reset();
+						} else {
+							if((touch_info->x) > 512) s2m_right = true;
+							else s2m_right = false;
+							s2m_finger = true;
+							s2m_tap_time_pre = ktime_to_ms(ktime_get());
+							s2m_y = touch_info->y;
+						}
+					}
+				}
+				if ((!state_down) && (s2m_finger)){ 
+					s2m_reset();
+				}
 				//printk( "ITUCH : <%d>(%s)[%d(%d):%d(%d)]-%u\n", finger, state_down ? "down" : "up", touch_info->x, touch_info->wx, touch_info->y, touch_info->wy, touch_info->count );
 			}
 
@@ -781,30 +853,13 @@ if (nui_report_input) {
 		if ((abs(x - s2w_x) < S2W_DELTA_X) && (y > 450) &&
 				((ktime_to_ms(ktime_get()) - s2w_tap_time_pre) < S2W_TIMEOUT_MAX) ) {
 			if (y < 750) {
-				/*
-				if(s2w_oneswipe > 0) {
-					s2w_reset();
-					reset_device(rmi4_data);
-					input_mt_slot(rmi4_data->input_dev, 0);
-					input_mt_report_slot_state(rmi4_data->input_dev,
-						MT_TOOL_FINGER, true);
-					input_report_abs(rmi4_data->input_dev,
-						ABS_MT_POSITION_X, x);
-					input_report_abs(rmi4_data->input_dev,
-						ABS_MT_POSITION_Y, y);
-					input_report_abs(rmi4_data->input_dev,
-							ABS_MT_TOUCH_MAJOR, max(wx, wy));
-					input_report_abs(rmi4_data->input_dev,
-							ABS_MT_TOUCH_MINOR, min(wx, wy));
-					input_mt_sync(rmi4_data->input_dev);
-					input_sync(rmi4_data->input_dev);
-				}
-				*/
 				s2w_scron = true;
 				doubletap2wake_pwrtrigger();
 			}
 		} else s2w_reset();
 	}
+	
+	if((s2m_finger)&&(scr_suspended)) s2m_detect(x,y);
 
 	return;
 }
@@ -2733,6 +2788,9 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 	
 	if (no_suspend_touch) {
 		s2w_reset();
+		s2m_reset();
+		dt2w_2fgr = false;
+		dt2w_3fgr = false;
 		doubletap2wake_reset();
 		reset_all_touch(rmi4_data);
 		reset_device(rmi4_data);
