@@ -469,8 +469,14 @@ static void mediakey_press(struct work_struct * doubletap2wake_presspwr_work) {
 	
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
-	if(s2m_right) key_code_m = KEY_NEXTSONG;
-	else key_code_m = KEY_PREVIOUSSONG;
+	if(dt2w_vib == 1) vibrate(50);
+	if(s2m_right) {
+		if(!s2m_reverse) key_code_m = KEY_NEXTSONG;
+		else key_code_m = KEY_PREVIOUSSONG;
+	} else {
+		if(!s2m_reverse) key_code_m = KEY_PREVIOUSSONG;
+		else key_code_m = KEY_NEXTSONG;
+	}
 	input_event(doubletap2wake_pwrdev, EV_KEY, key_code_m, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(D2W_PWRKEY_DUR);
@@ -789,7 +795,7 @@ if (nui_report_input) {
 				}
 				
 				//media control
-				if((state_down) && (scr_suspended) && (s2m > 0)) {
+				if((state_down) && (scr_suspended) && (s2m == 1)) {
 					if(!s2m_finger) {
 						if((finger>0) || dt2w_2fgr || dt2w_3fgr || ((touch_info->y) > 256)) {
 							s2m_reset();

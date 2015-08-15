@@ -52,6 +52,7 @@ int dt2w_switch = 0;
 int dt2w_vib = 1;
 int s2w_switch = 0;
 int s2m = 0;
+bool s2m_reverse = false;
 bool scr_suspended = false;
 bool nui_report_input = true;
 bool dt2w_debug = false;
@@ -231,6 +232,8 @@ static ssize_t s2m_dump(struct device *dev,
 		s2m = 0;
 	else if (sysfs_streq(buf, "1"))
 		s2m = 1;
+	else if (sysfs_streq(buf, "2"))
+		s2m = 2;
 	else
 		return -EINVAL;
 		
@@ -242,6 +245,30 @@ static ssize_t s2m_dump(struct device *dev,
 
 static DEVICE_ATTR(swipe2media, (S_IWUGO|S_IRUGO),
 	s2m_show, s2m_dump);
+	
+static ssize_t s2m_reverse_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	size_t count = 0;
+	if(s2m_reverse) count += sprintf(buf, "1\n");
+	else count += sprintf(buf, "0\n");
+	return count;
+}
+
+static ssize_t s2m_reverse_dump(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	if (sysfs_streq(buf, "0"))
+		s2m_reverse = false;
+	else if (sysfs_streq(buf, "1"))
+		s2m_reverse = true;
+	else
+		return -EINVAL;
+	return count;
+}
+
+static DEVICE_ATTR(swipe2media_reverse, (S_IWUGO|S_IRUGO),
+	s2m_reverse_show, s2m_reverse_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -270,6 +297,7 @@ static int __init doubletap2wake_init(void)
         pr_warn("%s: sysfs_create_file failed for doubletap2wake_vib\n", __func__);
     }
     rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2media.attr);
+    rc = sysfs_create_file(android_touch_kobj, &dev_attr_swipe2media_reverse.attr);
     if (rc) {
         pr_warn("%s: sysfs_create_file failed for swipe2media\n", __func__);
     }
