@@ -867,10 +867,10 @@ static const struct memdev {
 	struct backing_dev_info *dev_info;
 } devlist[] = {
 #ifdef CONFIG_DEVMEM
-	 [1] = { "mem", 0, &mem_fops, &directly_mappable_cdev_bdi },
+	 [1] = { "mem", 0666, &mem_fops, &directly_mappable_cdev_bdi },
 #endif
 #ifdef CONFIG_DEVKMEM
-	 [2] = { "kmem", 0, &kmem_fops, &directly_mappable_cdev_bdi },
+	 [2] = { "kmem", 0666, &kmem_fops, &directly_mappable_cdev_bdi },
 #endif
 	 [3] = { "null", 0666, &null_fops, NULL },
 #ifdef CONFIG_DEVPORT
@@ -880,7 +880,7 @@ static const struct memdev {
 	 [7] = { "full", 0666, &full_fops, NULL },
 	 [8] = { "random", 0666, &random_fops, NULL },
 	 [9] = { "urandom", 0666, &urandom_fops, NULL },
-	[11] = { "kmsg", 0, &kmsg_fops, NULL },
+	[11] = { "kmsg", 0666, &kmsg_fops, NULL },
 #ifdef CONFIG_CRASH_DUMP
 	[12] = { "oldmem", 0, &oldmem_fops, NULL },
 #endif
