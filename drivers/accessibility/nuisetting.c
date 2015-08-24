@@ -35,6 +35,7 @@ int focus_key_scroff = 528;
 int nui_torch_intensity = 2;
 int nui_proximity_sens = 0;
 int brlock = 0;
+int nui_which_vol = 0;
 
 /*
  * SYSFS stuff below here
@@ -475,6 +476,32 @@ static ssize_t brlock_dump(struct device *dev,
 }
 static DEVICE_ATTR(brlock, (S_IWUGO|S_IRUGO),
 	brlock_show, brlock_dump);
+	
+// choose twrp (detect vol key)
+static ssize_t which_vol_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", nui_which_vol);
+}
+
+static ssize_t which_vol_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	if(val == 0) {
+			nui_which_vol = 0; /* reset the value */
+	} else return -EINVAL;
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(which_vol, (S_IWUGO|S_IRUGO),
+	which_vol_show, which_vol_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -507,6 +534,7 @@ static int __init nuisetting_init(void)
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_torch.attr);	
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_proximitysens.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_brlock.attr);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_which_vol.attr);
 	pr_info(LOGTAG"%s done\n", __func__);
 
 	return 0;

@@ -13,6 +13,9 @@
 #define NUI_BATT_SAV_FREQ_LEV_TWO	9
 #define NUI_BATT_SAV_FREQ_LEV_THREE	11
 
+/*
+ * For reading battery level
+ */
 extern int nui_batt_level;
 
 /*
@@ -69,6 +72,11 @@ void draw_nui_logo(int logo);
  */
 extern int nui_torch_intensity;
 
+/*
+ * Proximity sensor sensitive
+ * 0 for 2cm
+ * 1 for 5cm
+ */
 extern int nui_proximity_sens;
 void nui_proximity_sensitive(int i);
 
@@ -76,5 +84,14 @@ void nui_proximity_sensitive(int i);
  * Lock brightness
  */
 extern int brlock;
+
+/*
+ * Detect which of 2 volume keys was preaaed
+ * Use for choosing which recovery to boot
+ * 0 for none (waiting)
+ * 1 for vol down
+ * 2 for vol up
+ */
+extern int nui_which_vol;
 
 #endif	/* _LINUX_NUISETTING_H */

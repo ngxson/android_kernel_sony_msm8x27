@@ -382,14 +382,20 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	}
 	
 	// Hold vol up and then press focus once to force brghtness to 40
+	// vol down 114
 	// vol up 115
 	// focus 528
 	// detector
 	if(btn_code == 115) {
+		nui_which_vol = 2;
 		if(!!state) pressed_vol_up = true;
 		else pressed_vol_up = false;
 	} else if((btn_code == 528) && (pressed_vol_up) && (!!state)) {
 		nui_set_brightness(40);
+	}
+	
+	if(btn_code == 114) {
+		nui_which_vol = 1;
 	}
 }
 

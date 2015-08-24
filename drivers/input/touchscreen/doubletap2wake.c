@@ -232,8 +232,6 @@ static ssize_t s2m_dump(struct device *dev,
 		s2m = 0;
 	else if (sysfs_streq(buf, "1"))
 		s2m = 1;
-	else if (sysfs_streq(buf, "2"))
-		s2m = 2;
 	else
 		return -EINVAL;
 		
