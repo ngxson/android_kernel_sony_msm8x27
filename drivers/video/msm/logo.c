@@ -279,7 +279,8 @@ void draw_nui_logo(int logo)
 		}
 
 		while (++i < 6) {
-			if (logo == 1) ret = fih_load_565rle_image(INIT_IMAGE_FILE_ONE);
+			if (logo == 0) ret = fih_load_565rle_image(INIT_IMAGE_FILE);
+			else if (logo == 1) ret = fih_load_565rle_image(INIT_IMAGE_FILE_ONE);
 			else if (logo == 2) ret = fih_load_565rle_image(INIT_IMAGE_FILE_TWO);
 			else ret = fih_load_565rle_image(INIT_IMAGE_FILE_THR);
 			

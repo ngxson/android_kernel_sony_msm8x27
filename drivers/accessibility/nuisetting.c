@@ -246,7 +246,9 @@ static ssize_t nui_logo_dump(struct device *dev,
 {
 	int value;
 
-	if (sysfs_streq(buf, "1"))
+	if (sysfs_streq(buf, "0"))
+		value = 0;
+	else if (sysfs_streq(buf, "1"))
 		value = 1;
 	else if (sysfs_streq(buf, "2"))
 		value = 2;
