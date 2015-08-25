@@ -795,7 +795,7 @@ if (nui_report_input) {
 				}
 				
 				//media control
-				if((state_down) && (scr_suspended) && (s2m > 1)) {
+				if((state_down) && (scr_suspended) && (s2m > 0)) {
 					if(!s2m_finger) {
 						if((finger>0) || dt2w_2fgr || dt2w_3fgr || ((touch_info->y) > 256)) {
 							s2m_reset();
