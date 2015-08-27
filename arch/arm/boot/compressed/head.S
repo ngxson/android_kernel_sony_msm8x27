@@ -190,7 +190,6 @@ start:
 		/* Compute max space for atags, if max <= 0 don't copy. */
 		subs	r5, r0, r2			@ max = min(zreladdr, pc) - dest
 		bls	no_atags_cpy
-
 		/* Copy atags to params_phys. */
 		/* r8 src, r2 dest, r5 max */
 
@@ -229,7 +228,6 @@ no_atags_cpy:
 
 not_booting_other:
 #endif
-
 
 #ifndef __ARM_ARCH_2__
 		/*
