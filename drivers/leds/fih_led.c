@@ -27,9 +27,9 @@ static int		flag_fade = -1;//PERI-BJ-DO_LED_OFF_AFTER_FADEOUT-00+
 
 //MTD-SW3-PERIPHERAL-BJ-LED_DEBUG_MSG-00*{
 
-#define LED_ERR(fmt, args...) printk(KERN_ERR "[%s][ERR] Driver_LED : "fmt" \n", __func__, ##args)
-#define LED_WAN(fmt, args...) printk(KERN_WARNING"[%s][WAN] Driver_LED : "fmt" \n", __func__, ##args)
-#define LED_MSG(fmt, args...) printk(KERN_INFO "[%s][MSG] Driver_LED : "fmt" \n", __func__, ##args)
+#define LED_ERR(fmt, args...) //printk(KERN_ERR "[%s][ERR] Driver_LED : "fmt" \n", __func__, ##args)
+#define LED_WAN(fmt, args...) //printk(KERN_WARNING"[%s][WAN] Driver_LED : "fmt" \n", __func__, ##args)
+#define LED_MSG(fmt, args...) //printk(KERN_INFO "[%s][MSG] Driver_LED : "fmt" \n", __func__, ##args)
 
 //#define DEBUG_LED
 #ifdef DEBUG_LED
@@ -1835,7 +1835,7 @@ static ssize_t led_info( void *node_data, struct device_attribute *attr, char *b
 
 static void	led_early_suspend_function(struct early_suspend *handler)
 {
-	struct wake_lock		*timeout_wakelock	= &container_of(handler, struct leds_driver_data, led_early_suspend)->timeout_wakelock;
+	/* struct wake_lock		*timeout_wakelock	= &container_of(handler, struct leds_driver_data, led_early_suspend)->timeout_wakelock;
 	struct BS_data		*led_datas	= container_of(handler, struct leds_driver_data, led_early_suspend)->index_buffer;
 	unsigned int		count		= container_of(handler, struct leds_driver_data, led_early_suspend)->count;
 	struct command_parameter	parameter;
@@ -1869,7 +1869,7 @@ static void	led_early_suspend_function(struct early_suspend *handler)
 		flag_fade = -1;
 	}
 	//PERI-BJ-DO_LED_OFF_AFTER_FADEOUT-00+}
-
+*/
 }
 
 static void	led_late_resume_function(struct early_suspend *handler)
