@@ -240,7 +240,7 @@ error1:
 
 static void draw_logo(void)
 {
-	struct fb_info *fb_info = registered_fb[0];
+	/* struct fb_info *fb_info = registered_fb[0];
 	int ret = 0, i = 0;
 
 	if (fb_info && fb_info->fbops->fb_open) {
@@ -263,7 +263,8 @@ static void draw_logo(void)
 					__func__, i, ret);
 			msleep(100);
 		};
-	}
+	} */
+	draw_nui_logo(0);
 }
 
 void draw_nui_logo(int logo)
