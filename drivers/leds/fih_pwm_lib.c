@@ -21,7 +21,7 @@
 
 #define PWM_ERR(fmt, args...) printk(KERN_ERR "[%s][ERR] PWM_LIB_LED : "fmt" \n", __func__, ##args)
 #define PWM_WAN(fmt, args...) printk(KERN_WARNING"[%s][WAN] PWM_LIB_LED : "fmt" \n", __func__, ##args)
-#define PWM_MSG(fmt, args...) printk(KERN_INFO"[%s][MSG] PWM_LIB_LED : "fmt" \n", __func__, ##args)
+#define PWM_MSG(fmt, args...) //printk(KERN_INFO"[%s][MSG] PWM_LIB_LED : "fmt" \n", __func__, ##args)
 
 //#define PWM_FIH_DEBUG
 #ifdef PWM_FIH_DEBUG
