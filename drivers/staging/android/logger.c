@@ -53,6 +53,9 @@ static struct notifier_block notif;
 #endif
 #endif
 
+static unsigned int log_mode = 0;
+module_param(log_mode, uint, S_IWUSR | S_IRUGO);
+
 /**
  * struct logger_log - represents a specific log, such as 'main' or 'radio'
  * @buffer:	The actual ring buffer
@@ -538,10 +541,11 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
 	struct logger_entry header;
 	struct timespec now;
 
-#if defined(CONFIG_LCD_NOTIFY) || defined(CONFIG_POWERSUSPEND)
-	if (!log_enabled || log_mode == 2)
+//#if defined(CONFIG_LCD_NOTIFY) || defined(CONFIG_POWERSUSPEND)
+	//if (!log_enabled || log_mode == 2)
+	if (log_mode == 2)
 		return 0;
-#endif
+//#endif
 
 	log = file_get_log(iocb->ki_filp);
 	now = current_kernel_time();
@@ -892,19 +896,19 @@ static int __init logger_init(void)
 	register_power_suspend(&log_power_suspend);
 #endif
 
-	ret = create_log(LOGGER_LOG_MAIN, 128*1024);
+	ret = create_log(LOGGER_LOG_MAIN, CONFIG_LOGCAT_SIZE*1024);
 	if (unlikely(ret))
 		goto out;
 
-	ret = create_log(LOGGER_LOG_EVENTS, 128*1024);
+	ret = create_log(LOGGER_LOG_EVENTS, CONFIG_LOGCAT_SIZE*1024);
 	if (unlikely(ret))
 		goto out;
 
-	ret = create_log(LOGGER_LOG_RADIO, 128*1024);
+	ret = create_log(LOGGER_LOG_RADIO, CONFIG_LOGCAT_SIZE*1024);
 	if (unlikely(ret))
 		goto out;
 
-	ret = create_log(LOGGER_LOG_SYSTEM, 128*1024);
+	ret = create_log(LOGGER_LOG_SYSTEM, CONFIG_LOGCAT_SIZE*1024);
 	if (unlikely(ret))
 		goto out;
 
