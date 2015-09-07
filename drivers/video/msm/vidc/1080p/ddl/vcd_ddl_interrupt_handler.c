@@ -260,11 +260,6 @@ static u32 ddl_decoder_seq_done_callback(struct ddl_context *ddl_context,
 		vidc_sm_get_mp2datadump_status(&ddl->shared_mem
 			[ddl->command_channel],
 			&decoder->mp2_datadump_status);
-		if (res_trk_get_disable_fullhd() &&
-			(seq_hdr_info.img_size_x * seq_hdr_info.img_size_y >
-				1280 * 720)) {
-			DDL_MSG_ERROR("Playing video with Resolution greater than 720P HD");
-		}
 		if (!seq_hdr_info.img_size_x || !seq_hdr_info.img_size_y) {
 			DDL_MSG_ERROR("FATAL:ZeroImageSize");
 			ddl_client_fatal_cb(ddl);
@@ -278,9 +273,7 @@ static u32 ddl_decoder_seq_done_callback(struct ddl_context *ddl_context,
 			seq_hdr_info.level);
 		switch (decoder->codec.codec) {
 		case VCD_CODEC_H264:
-			if (decoder->profile.profile == VCD_PROFILE_H264_HIGH ||
-				decoder->profile.profile ==
-				VCD_PROFILE_UNKNOWN) {
+			if (decoder->profile.profile == VCD_PROFILE_UNKNOWN) {
 				if ((disp_profile_info.chroma_format_idc >
 					VIDC_1080P_IDCFORMAT_420) ||
 					(disp_profile_info.bit_depth_luma_minus8
