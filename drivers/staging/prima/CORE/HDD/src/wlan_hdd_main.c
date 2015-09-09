@@ -384,46 +384,6 @@ static void hdd_vos_trace_enable(VOS_MODULE_ID moduleId, v_U32_t bitmask)
 }
 
 
-/**---------------------------------------------------------------------------
-
-  \brief hdd_wdi_trace_enable() - Configure initial WDI Trace enable
-
-  Called immediately after the cfg.ini is read in order to configure
-  the desired trace levels in the WDI.
-
-  \param  - moduleId - module whose trace level is being configured
-  \param  - bitmask - bitmask of log levels to be enabled
-
-  \return - void
-
-  --------------------------------------------------------------------------*/
-static void hdd_wdi_trace_enable(wpt_moduleid moduleId, v_U32_t bitmask)
-{
-   wpt_tracelevel level;
-
-   /* if the bitmask is the default value, then a bitmask was not
-      specified in cfg.ini, so leave the logging level alone (it
-      will remain at the "compiled in" default value) */
-   if (CFG_WDI_TRACE_ENABLE_DEFAULT == bitmask)
-   {
-      return;
-   }
-
-   /* a mask was specified.  start by disabling all logging */
-   wpalTraceSetLevel(moduleId, eWLAN_PAL_TRACE_LEVEL_NONE, 0);
-
-   /* now cycle through the bitmask until all "set" bits are serviced */
-   level = eWLAN_PAL_TRACE_LEVEL_FATAL;
-   while (0 != bitmask)
-   {
-      if (bitmask & 1)
-      {
-         wpalTraceSetLevel(moduleId, level, 1);
-      }
-      level++;
-      bitmask >>= 1;
-   }
-}
 
 /*
  * FUNCTION: wlan_hdd_validate_context
@@ -5904,15 +5864,7 @@ int hdd_wlan_startup(struct device *dev )
    hdd_vos_trace_enable(VOS_MODULE_ID_HDD_SOFTAP,
                         pHddCtx->cfg_ini->vosTraceEnableHDDSAP);
 
-   // Update WDI trace levels based upon the cfg.ini
-   hdd_wdi_trace_enable(eWLAN_MODULE_DAL,
-                        pHddCtx->cfg_ini->wdiTraceEnableDAL);
-   hdd_wdi_trace_enable(eWLAN_MODULE_DAL_CTRL,
-                        pHddCtx->cfg_ini->wdiTraceEnableCTL);
-   hdd_wdi_trace_enable(eWLAN_MODULE_DAL_DATA,
-                        pHddCtx->cfg_ini->wdiTraceEnableDAT);
-   hdd_wdi_trace_enable(eWLAN_MODULE_PAL,
-                        pHddCtx->cfg_ini->wdiTraceEnablePAL);
+
 
    if (VOS_FTM_MODE == hdd_get_conparam())
    {
