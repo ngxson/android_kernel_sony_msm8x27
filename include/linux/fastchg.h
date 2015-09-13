@@ -17,7 +17,7 @@
 
 extern int force_fast_charge;
 
-#define FAST_CHARGE_DISABLED 1        /* default */
+#define FAST_CHARGE_DISABLED 0        /* default */
 #define FAST_CHARGE_FORCE_AC 1
 
 #endif
