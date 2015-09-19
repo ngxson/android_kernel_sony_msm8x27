@@ -36,6 +36,7 @@ int nui_torch_intensity = 2;
 int nui_proximity_sens = 0;
 int brlock = 0;
 int nui_which_vol = 0;
+bool focus2torch = false;
 
 /*
  * SYSFS stuff below here
@@ -504,6 +505,34 @@ static ssize_t which_vol_dump(struct device *dev,
 
 static DEVICE_ATTR(which_vol, (S_IWUGO|S_IRUGO),
 	which_vol_show, which_vol_dump);
+	
+// focus2torch
+static ssize_t focus2torch_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", focus2torch);
+}
+
+static ssize_t focus2torch_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	if(val == 1) {
+			focus2torch = true;
+		} else if (val == 0) {
+			focus2torch = false;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+static DEVICE_ATTR(focus2torch, (S_IWUGO|S_IRUGO),
+	focus2torch_show, focus2torch_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -537,7 +566,7 @@ static int __init nuisetting_init(void)
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_proximitysens.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_brlock.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_which_vol.attr);
-	pr_info(LOGTAG"%s done\n", __func__);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus2torch.attr);
 
 	return 0;
 }

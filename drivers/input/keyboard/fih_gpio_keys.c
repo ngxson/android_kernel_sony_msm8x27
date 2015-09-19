@@ -33,8 +33,12 @@
 #include <linux/earlysuspend.h>
 
 #include <linux/nuisetting.h>
+#include <linux/wakelock.h>
 
 static bool scr_suspended = false;
+static bool flash_on = false;
+static bool going_to_flash = false;
+static struct wake_lock m_wake_lock;
 
 struct wakeup_data
 {
@@ -344,6 +348,21 @@ static struct attribute_group gpio_keys_attr_group = {
 };
 static bool pressed_vol_up = false;
 
+static void turn_on_torch_work(struct work_struct * turn_on_torch) {
+	wake_lock_timeout(&m_wake_lock, 2000);
+	printk("ngxson: focus2torch work\n");
+	msleep(1500);
+	if(going_to_flash) {
+		printk("ngxson: turn on torch\n");
+		flash_on = true;
+		nui_torch(1);
+	} else {
+		flash_on = false;
+	}
+	return;
+}
+static DECLARE_WORK(turn_on_torch, turn_on_torch_work);
+
 static void gpio_keys_report_event(struct gpio_button_data *bdata)
 {
 	struct gpio_keys_button *button = bdata->button;
@@ -366,6 +385,19 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 		m_camera_key = camera_key;
 		m_focus_key = focus_key;
 	}
+	
+	if ((focus2torch) && (scr_suspended) && (btn_code == 528)) {
+		m_camera_key = 0;
+		m_focus_key = 0;
+		if(!!state) {
+			going_to_flash = true;
+			schedule_work(&turn_on_torch);
+		} else {
+			going_to_flash = false;
+			if(flash_on) nui_torch(0);
+		}
+	}
+	
 	if(btn_code == 766) {
 		if((m_camera_key == 766) || (m_camera_key == 528)) {
 			input_event(input, type, m_camera_key, !!state);
@@ -823,6 +855,7 @@ static void key_early_suspend(struct early_suspend *h) {
 
 static void key_late_resume(struct early_suspend *h) {
 	scr_suspended = false;
+	if(flash_on) nui_torch(0);
 }
 
 static struct early_suspend key_early_suspend_handler = {
@@ -848,6 +881,7 @@ static struct platform_driver gpio_keys_device_driver = {
 static int __init gpio_keys_init(void)
 {
 	register_early_suspend(&key_early_suspend_handler);
+	wake_lock_init(&m_wake_lock, WAKE_LOCK_SUSPEND, "fih_gpio_key");
 	return platform_driver_register(&gpio_keys_device_driver);
 }
 

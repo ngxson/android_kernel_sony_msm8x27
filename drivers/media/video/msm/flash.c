@@ -619,6 +619,31 @@ int msm_camera_flash_external(
 	return rc;
 }
 
+void nui_torch(int mode) {
+	int rc = 0;
+	
+	if(mode == 1) {
+		if (!lm3642_client) {
+			rc = i2c_add_driver(&lm3642_i2c_driver);
+		}
+		rc = lm3642_init(PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		if (nui_torch_intensity==0) 
+			rc = lm3642_control(TORCH_46P88_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		else if (nui_torch_intensity==1) 
+			rc = lm3642_control(TORCH_93P74_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		else
+			rc = lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+	} else {
+		rc = lm3642_control(TORCH_OFF, MODES_STASNDBY, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		if (lm3642_client) {
+            i2c_del_driver(&lm3642_i2c_driver);
+            lm3642_client = NULL;
+        }
+	}
+	if (rc < 0)
+    pr_err("lm3642_control(TORCH_140P63_MA, MODES_TORCH) fail !\n");
+}
+
 #else
 static void flash_wq_function(struct work_struct *work)
 {
