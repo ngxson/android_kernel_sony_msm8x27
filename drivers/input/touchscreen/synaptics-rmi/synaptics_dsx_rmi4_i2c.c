@@ -1174,11 +1174,25 @@ static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
 	for (finger = 0; finger < 5; finger++) {
 		input_mt_slot(rmi4_data->input_dev, finger);
 		input_mt_report_slot_state(rmi4_data->input_dev,
-				MT_TOOL_FINGER, false);
-		input_report_key(rmi4_data->input_dev, BTN_TOUCH, 0);
-		//input_mt_sync(rmi4_data->input_dev);
-		input_sync(rmi4_data->input_dev);
+				MT_TOOL_FINGER, true);
+		input_report_abs(rmi4_data->input_dev,
+				ABS_MT_POSITION_X, 0);
+		input_report_abs(rmi4_data->input_dev,
+				ABS_MT_POSITION_Y, 0);
+		
 	}
+	for (finger = 0; finger < 5; finger++) {
+		rmi4_data->finger_state[finger].x = 0;
+		rmi4_data->finger_state[finger].y = 0;
+		rmi4_data->finger_state[finger].wx = 0;
+		rmi4_data->finger_state[finger].wy = 0;
+		input_mt_slot(rmi4_data->input_dev, finger);
+		input_mt_report_slot_state(rmi4_data->input_dev,
+				MT_TOOL_FINGER, false);
+	}
+	//input_report_key(rmi4_data->input_dev, BTN_TOUCH, 0);
+	input_mt_sync(rmi4_data->input_dev);
+	input_sync(rmi4_data->input_dev);
 }
 
  /**
@@ -2771,7 +2785,9 @@ static void reset_device(struct synaptics_rmi4_data *rmi4_data) {
 		if (rmi4_data->full_pm_cycle) {
 			synaptics_rmi4_suspend(&(rmi4_data->input_dev->dev));
 		}
-		msleep(5);
+		msleep(2);
+		reset_all_touch(rmi4_data);
+		msleep(2);
 		if (rmi4_data->full_pm_cycle) {
 			synaptics_rmi4_resume(&(rmi4_data->input_dev->dev));
 		}
@@ -2798,7 +2814,6 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 		dt2w_2fgr = false;
 		dt2w_3fgr = false;
 		doubletap2wake_reset();
-		reset_all_touch(rmi4_data);
 		reset_device(rmi4_data);
 		synaptics_rmi4_irq_enable(rmi4_data, true);
 		enable_irq_wake(rmi4_data->irq);
@@ -2847,7 +2862,6 @@ static void synaptics_rmi4_late_resume(struct early_suspend *h)
 		//printk( "ngxson: debug dt2w on\n");
 		doubletap2wake_reset();
 		//if(s2w_oneswipe == 0)
-		reset_all_touch(rmi4_data);
 		reset_device(rmi4_data);
 		disable_irq_wake(rmi4_data->irq);
 	} else {
