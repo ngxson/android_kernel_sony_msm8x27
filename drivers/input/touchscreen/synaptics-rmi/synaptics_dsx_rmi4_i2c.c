@@ -1416,12 +1416,12 @@ static void synaptics_rmi4_report_touch(struct synaptics_rmi4_data *rmi4_data,
 {
 	unsigned char touch_count_2d;
 
-	dev_dbg(&rmi4_data->i2c_client->dev,
+	/*dev_dbg(&rmi4_data->i2c_client->dev,
 			"%s: Function %02x reporting\n",
 			__func__, fhandler->fn_number);
 
 	switch (fhandler->fn_number) {
-	case SYNAPTICS_RMI4_F11:
+	case SYNAPTICS_RMI4_F11:*/
 		touch_count_2d = synaptics_rmi4_f11_abs_report(rmi4_data,
 				fhandler);
 
@@ -1431,8 +1431,9 @@ static void synaptics_rmi4_report_touch(struct synaptics_rmi4_data *rmi4_data,
 			rmi4_data->fingers_on_2d = true;
 		else
 			rmi4_data->fingers_on_2d = false;
-		break;
-	case SYNAPTICS_RMI4_F12:
+		//break;
+	// since mperia m only use f11, we can disable other functions to save cpu cycle
+	/*case SYNAPTICS_RMI4_F12:
 		touch_count_2d = synaptics_rmi4_f12_abs_report(rmi4_data,
 				fhandler);
 
@@ -1448,7 +1449,7 @@ static void synaptics_rmi4_report_touch(struct synaptics_rmi4_data *rmi4_data,
 		break;
 	default:
 		break;
-	}
+	}*/
 
 	return;
 }
@@ -1518,7 +1519,7 @@ static void dt2w_irq(struct work_struct * dt2w_irq_work) {
 	
 	dt2w_got_xy = false;
 	mutex_trylock(&irqdt2w);
-	msleep(22);
+	//msleep(22);
 	/*touch_count = synaptics_rmi4_sensor_report(dt2w_rmi4_data);
 	if(touch_count > 0) {
 		msleep(12);
@@ -1554,14 +1555,20 @@ static DECLARE_WORK(dt2w_irq_work, dt2w_irq);
 static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 {
 	unsigned char touch_count;
+	unsigned int i;
 	struct synaptics_rmi4_data *rmi4_data = data;
 
 	if((no_suspend_touch)&&(scr_suspended)) {
 		wake_lock_timeout(&dt2w_wake_lock, 1000);
 		//wake_lock(&dt2w_wake_lock);
-		if(!nui_suspend) {
-			dt2w_rmi4_data = data;
-			schedule_work(&dt2w_irq_work);
+		for(i=0; i<5 ; i++) {
+			if(!nui_suspend) {
+				dt2w_rmi4_data = data;
+				schedule_work(&dt2w_irq_work);
+				msleep(12); //my luck number ;)
+				return IRQ_HANDLED;
+			}
+			msleep(12);
 		}
 	} else {
 		do {
@@ -1575,6 +1582,7 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 				break;
 			}
 		} while (!rmi4_data->touch_stopped);
+		return IRQ_HANDLED;
 	}
 
 
@@ -1582,8 +1590,6 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 	//	mutex_unlock(&irqdt2w);
 		//wake_unlock(&dt2w_wake_lock);
 	//}
-
-	return IRQ_HANDLED;
 }
 
  /**
