@@ -95,7 +95,6 @@ extern int brlock;
 extern int nui_which_vol;
 
 // Press focus to turn on torch
-void nui_torch(int mode);
 extern bool focus2torch;
 
 #endif	/* _LINUX_NUISETTING_H */
