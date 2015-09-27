@@ -2,11 +2,13 @@
  * Synaptics DSX touchscreen driver
  *
  * Copyright (C) 2012 Synaptics Incorporated
+ * ADAPTED ONLY FOR XPERIA M SS/DS
  *
  * Copyright (C) 2012 Alexandra Chin <alexandra.chin@tw.synaptics.com>
  * Copyright (C) 2012 Scott Lin <scott.lin@tw.synaptics.com>
  * Copyright (C) 2010 Js HA <js.ha@stericsson.com>
  * Copyright (C) 2010 Naveen Kumar G <naveen.gaddipati@stericsson.com>
+ * Blah blah (B) Nui <thichthat@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
