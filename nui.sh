@@ -9,8 +9,10 @@
 ######################################################
 
 THIS_USER=ngxson
-GCC_TOOLCHAIN=arm-cortex_a15-linux-gnueabihf-linaro_4.9.3-2015.03
-GCC_PREFIX=arm-cortex_a15-linux-gnueabihf
+#GCC_TOOLCHAIN=arm-cortex_a15-linux-gnueabihf-linaro_4.9.3-2015.03
+#GCC_PREFIX=arm-cortex_a15-linux-gnueabihf
+GCC_TOOLCHAIN=Toolchain-architoolchain-5.1-arm-linux-gnueabihf-cortex_a15_neon_vfpv4
+GCC_PREFIX=arm-architoolchain-linux-gnueabihf
 
 rm "/home/$THIS_USER/out/arch/arm/boot/zImage"
 

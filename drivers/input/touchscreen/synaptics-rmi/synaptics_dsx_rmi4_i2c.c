@@ -104,8 +104,6 @@ static bool dt2w_pressed = false;
 static bool dt2w_got_xy = false;
 static int dt2w_get_x = 0;
 static int dt2w_get_y = 0;
-static bool dt2w_2fgr = false;
-static bool dt2w_3fgr = false;
 //s2w
 static int s2w_tap_time_pre = 0;
 static int s2w_x = 0;
@@ -655,8 +653,6 @@ static void synaptics_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 	int y = currentf->y;
 	int wx = currentf->wx;
 	int wy = currentf->wy;
-
-#ifdef TYPE_B_PROTOCOL
 	int prev_x = rmi4_data->finger_state[finger].x;
 	int prev_y = rmi4_data->finger_state[finger].y;
 	int prev_wx = rmi4_data->finger_state[finger].wx;
@@ -696,54 +692,8 @@ static void synaptics_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 			rmi4_data->finger_state[finger].wy = wy;
 		}
 	}
-#else
-	if (currentf->status) {
-		input_report_abs(rmi4_data->input_dev,
-				ABS_MT_POSITION_X, x);
-		input_report_abs(rmi4_data->input_dev,
-				ABS_MT_POSITION_Y, y);
-		input_report_abs(rmi4_data->input_dev,
-				ABS_MT_TOUCH_MAJOR, max(wx, wy));
-		input_report_abs(rmi4_data->input_dev,
-				ABS_MT_TOUCH_MINOR, min(wx, wy));
-		input_mt_sync(rmi4_data->input_dev);
-	}
-#endif
 
 	rmi4_data->finger_state[finger].status = currentf->status;
-
-	/*{
-		struct	touch_information
-		{
-			unsigned char	status;
-			int		x, y;
-			int		wx, wy;
-			unsigned	count;
-		};
-
-		static struct touch_information	finger_info[] =
-		{
-			{ 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }
-		};
-
-		if( finger < sizeof( finger_info ) / sizeof( *finger_info ) )
-		{
-			struct touch_information	*touch_info = finger_info + finger;
-			char	state_down = !touch_info->status && currentf->status, state_up = touch_info->status && !currentf->status;
-			char	show_log = state_down | state_up;
-
-			if( !state_up )
-				touch_info->x = x, touch_info->y = y, touch_info->wx = wx, touch_info->wy = wy, ++touch_info->count;
-
-			if( show_log )
-			{
-				//printk( "ITUCH : <%d>(%s)[%d(%d):%d(%d)]-%u\n", finger, state_down ? "down" : "up", touch_info->x, touch_info->wx, touch_info->y, touch_info->wy, touch_info->count );
-			}
-
-			if( state_up )
-				touch_info->count	= 0;
-		}
-	}*/
 
 	return;
 }
@@ -756,7 +706,6 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 	int y = currentf->y;
 	int wx = currentf->wx;
 	int wy = currentf->wy;
-
 	int prev_x = rmi4_data->finger_state[finger].x;
 	int prev_y = rmi4_data->finger_state[finger].y;
 	int prev_wx = rmi4_data->finger_state[finger].wx;
@@ -802,8 +751,6 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 			struct touch_information	*touch_info = finger_info + finger;
 			char	state_down = !touch_info->status && currentf->status, state_up = touch_info->status && !currentf->status;
 			char	show_log = state_down | state_up;
-			unsigned int i;
-			bool dont_proccess = false;
 
 			if( !state_up )
 				touch_info->x = x, touch_info->y = y, touch_info->wx = wx, touch_info->wy = wy, ++touch_info->count;
@@ -811,25 +758,11 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 			if( show_log )
 			{
 				touch_info->status	= !touch_info->status;
-				/*if(state_down) {
-					if(finger == 1) dt2w_2fgr = true;
-					if(finger == 2) dt2w_3fgr = true;
-				} else {
-					if(finger == 1) dt2w_2fgr = false;
-					if(finger == 2) dt2w_3fgr = false;
-				}*/
-				for(i=1 ; i<5 ; i++) {
-					if(rmi4_data->finger_state[finger].status) {
-						dont_proccess = true;
-						break;
-					}
-				}
-				if ((dt2w_switch > 0) && (scr_suspended)) {
+				if (dt2w_switch > 0) {
 					if(state_down) {
 						dt2w_pressed = true;
 						if((finger>0) || ((touch_info->x) <100) || ((touch_info->x)>900) 
-								|| ((touch_info->y)<50) || ((touch_info->y) >950)
-								|| dont_proccess) {
+								|| ((touch_info->y)<50) || ((touch_info->y) >950)) {
 								/* Prevent sliding from screen edge */
 							doubletap2wake_reset();
 							dt2w_ok = false;
@@ -852,11 +785,10 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 					}
 				}
 				//s2w
-				if((state_down) && (scr_suspended) && (s2w_switch > 0)) {
+				if((state_down) && (s2w_switch > 0)) {
 					if(!s2w_finger) {
 						if (dt2w_debug) printk("ngxson: pressed x=%d y=%d\n", touch_info->x, touch_info->y);
-						if((finger>0) || ((touch_info->y) < 950)
-								|| dt2w_2fgr || dt2w_3fgr) {
+						if((finger>0) || ((touch_info->y) < 950)) {
 							s2w_reset();
 						} else {
 							s2w_finger = true;
@@ -872,9 +804,9 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 				}
 				
 				//media control
-				if((state_down) && (scr_suspended) && (s2m > 0)) {
+				if((state_down) && (s2m > 0)) {
 					if(!s2m_finger) {
-						if((finger>0) || dt2w_2fgr || dt2w_3fgr || ((touch_info->y) > 256)) {
+						if((finger>0) || ((touch_info->y) > 256)) {
 							s2m_reset();
 						} else if (((touch_info->x) > 128) && ((touch_info->x) < 896)) {
 							s2m_reset();
@@ -1197,13 +1129,11 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 		struct synaptics_rmi4_fn *fhandler)
 {
 	int retval;
-	unsigned char touch_count = 0; /* number of touch points */
+	unsigned char touch_count = 0;
 	unsigned char reg_index;
 	unsigned char finger;
-	//unsigned char fingers_supported = 5;
-	//unsigned char num_of_finger_status_regs;
 	unsigned char finger_shift;
-	unsigned char finger_status;
+	unsigned char finger_status = false;
 	unsigned char prev_status;
 	unsigned char data_reg_blk_size;
 	unsigned char finger_status_reg[3];
@@ -1216,14 +1146,6 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	int wy;
 	struct synaptics_rmi4_finger_state currentf;
 
-	/*
-	 * The number of finger status registers is determined by the
-	 * maximum number of fingers supported - 2 bits per finger. So
-	 * the number of finger status registers to read is:
-	 * register_count = ceil(max_num_of_fingers / 4)
-	 */
-	//fingers_supported = fhandler->num_of_data_points;
-	//num_of_finger_status_regs = 2; // correct me: (5 + 3) / 4 = 2
 	data_addr = fhandler->full_addr.data_base;
 	data_reg_blk_size = fhandler->size_of_data_register_block;
 
@@ -1233,26 +1155,25 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 			2);
 	if (retval < 0)
 		return 0;
-
-	for (finger = 0; finger < 5; finger++) {
+		
+	for (finger = 1; finger < 5; finger++) {
+		reg_index = finger / 4;
+		finger_shift = (finger % 4) * 2;
+		finger_status = (finger_status_reg[reg_index] >> finger_shift)
+				& MASK_2BIT;
+		if (finger_status) {
+			touch_count++;
+			break;
+		}
+	}
+	if(!finger_status) {
+		finger = 0;
 		reg_index = finger / 4;
 		finger_shift = (finger % 4) * 2;
 		finger_status = (finger_status_reg[reg_index] >> finger_shift)
 				& MASK_2BIT;
 		prev_status = rmi4_data->finger_state[finger].status;
-
-		/*
-		 * Each 2-bit finger status field represents the following:
-		 * 00 = finger not present
-		 * 01 = finger present and data accurate
-		 * 10 = finger present but data may be inaccurate
-		 * 11 = reserved
-		 */
-		if (!prev_status && !finger_status)
-			continue;
-
 		currentf.status = finger_status;
-
 		if (finger_status) {
 			data_offset = data_addr +
 					2 +
@@ -1263,25 +1184,25 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 					data_reg_blk_size);
 			if (retval < 0)
 				return 0;
-
 			x = (data[0] << 4) | (data[2] & MASK_4BIT);
 			y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
 			wx = (data[3] & MASK_4BIT);
 			wy = (data[3] >> 4) & MASK_4BIT;
-
 			if (rmi4_data->board->x_flip)
 				x = rmi4_data->sensor_max_x - x;
 			if (rmi4_data->board->y_flip)
 				y = rmi4_data->sensor_max_y - y;
-
 			currentf.x = x;
 			currentf.y = y;
 			currentf.wx = wx;
 			currentf.wy = wy;
 			touch_count++;
 		}
-
 		nui_rmi4_proc_fngr(rmi4_data, &currentf, finger, touch_count);
+	} else {
+		doubletap2wake_reset();
+		s2w_reset();
+		s2m_reset();
 	}
 
 	return touch_count;
@@ -1496,18 +1417,7 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 	unsigned int i;
 	struct synaptics_rmi4_data *rmi4_data = data;
 
-	if((no_suspend_touch)&&(scr_suspended)) {
-		wake_lock_timeout(&dt2w_wake_lock, 1000);
-		for(i=0; i<5 ; i++) {
-			if(!nui_suspend) {
-				dt2w_rmi4_data = data;
-				schedule_work(&dt2w_irq_work);
-				msleep(12); //my luck number ;)
-				break;
-			}
-			msleep(12);
-		}
-	} else {
+	if(!scr_suspended) {
 		do {
 			touch_count = synaptics_rmi4_sensor_report(rmi4_data);
 	
@@ -1519,6 +1429,17 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 				break;
 			}
 		} while (!rmi4_data->touch_stopped);
+	} else {
+		wake_lock_timeout(&dt2w_wake_lock, 1000);
+		for(i=0; i<5 ; i++) {
+			if(!nui_suspend) {
+				dt2w_rmi4_data = data;
+				schedule_work(&dt2w_irq_work);
+				msleep(12); //my luck number ;)
+				break;
+			}
+			msleep(12);
+		}
 	}
 	
 	return IRQ_HANDLED;
@@ -2749,8 +2670,6 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 	if (no_suspend_touch) {
 		s2w_reset();
 		s2m_reset();
-		dt2w_2fgr = false;
-		dt2w_3fgr = false;
 		doubletap2wake_reset();
 		reset_device(rmi4_data);
 		synaptics_rmi4_irq_enable(rmi4_data, true);
