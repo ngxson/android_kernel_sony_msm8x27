@@ -1333,7 +1333,6 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 			}
 			msleep(12);
 		}
-		return IRQ_HANDLED;
 	}
 	
 	return IRQ_HANDLED;
