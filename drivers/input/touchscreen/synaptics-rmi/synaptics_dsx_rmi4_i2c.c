@@ -662,13 +662,12 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 		{
 			unsigned char	status;
 			int		x, y;
-			int		wx, wy;
 			unsigned	count;
 		};
 
 		static struct touch_information	finger_info[] =
 		{
-			{ 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }, { 0, 0, 0, 0, 0, 0 }
+			{ 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }
 		};
 
 		if( finger < sizeof( finger_info ) / sizeof( *finger_info ) )
@@ -943,8 +942,7 @@ exit:
  * necessary coordinate manipulation, reports the finger data to
  * the input subsystem, and returns the number of fingers detected.
  */
-static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
-		struct synaptics_rmi4_fn *fhandler)
+static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
 	unsigned char touch_count = 0; /* number of touch points */
@@ -955,10 +953,10 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	unsigned char finger_shift;
 	unsigned char finger_status;
 	unsigned char prev_status;
-	unsigned char data_reg_blk_size;
+	//unsigned char data_reg_blk_size;
 	unsigned char finger_status_reg[3];
 	unsigned char data[F11_STD_DATA_LEN];
-	unsigned short data_addr;
+	//unsigned short data_addr;
 	unsigned short data_offset;
 	int x;
 	int y;
@@ -977,11 +975,13 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	 */
 	//fingers_supported = fhandler->num_of_data_points;
 	//num_of_finger_status_regs = 2; // correct me: (5 + 3) / 4 = 2
-	data_addr = fhandler->full_addr.data_base;
-	data_reg_blk_size = fhandler->size_of_data_register_block;
+	//data_addr = fhandler->full_addr.data_base;
+	//data_reg_blk_size = fhandler->size_of_data_register_block;
+	//data_addr = 21;
+	//data_reg_blk_size = 5;
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			data_addr,
+			21,
 			finger_status_reg,
 			2);
 	if (retval < 0)
@@ -1009,13 +1009,11 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 				MT_TOOL_FINGER, finger_status);
 
 		if (finger_status) {
-			data_offset = data_addr +
-					2 +
-					(finger * data_reg_blk_size);
+			data_offset = 23 +(finger * 5);
 			retval = synaptics_rmi4_i2c_read(rmi4_data,
 					data_offset,
 					data,
-					data_reg_blk_size);
+					5);
 			if (retval < 0)
 				return 0;
 
@@ -1076,8 +1074,7 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	return touch_count;
 }
 
-static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
-		struct synaptics_rmi4_fn *fhandler)
+static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
 	unsigned char touch_count = 0;
@@ -1085,20 +1082,22 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 	unsigned char finger;
 	unsigned char finger_shift;
 	unsigned char finger_status = false;
-	unsigned char data_reg_blk_size;
+	//unsigned char data_reg_blk_size;
 	unsigned char finger_status_reg[3];
 	unsigned char data[F11_STD_DATA_LEN];
-	unsigned short data_addr;
+	//unsigned short data_addr;
 	unsigned short data_offset;
 	int x;
 	int y;
 	struct synaptics_rmi4_finger_state currentf;
 
-	data_addr = fhandler->full_addr.data_base;
-	data_reg_blk_size = fhandler->size_of_data_register_block;
+	//data_addr = fhandler->full_addr.data_base;
+	//data_reg_blk_size = fhandler->size_of_data_register_block;
+	//data_addr = 21;
+	//data_reg_blk_size = 5;
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			data_addr,
+			21,
 			finger_status_reg,
 			2);
 	if (retval < 0)
@@ -1122,13 +1121,11 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
 				& MASK_2BIT;
 		currentf.status = finger_status;
 		if (finger_status) {
-			data_offset = data_addr +
-					2 +
-					(finger * data_reg_blk_size);
+			data_offset = 23 + (finger * 5);
 			retval = synaptics_rmi4_i2c_read(rmi4_data,
 					data_offset,
 					data,
-					data_reg_blk_size);
+					5);
 			if (retval < 0)
 				return 0;
 			x = (data[0] << 4) | (data[2] & MASK_4BIT);
@@ -1169,7 +1166,6 @@ static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
 		input_mt_report_slot_state(rmi4_data->input_dev,
 				MT_TOOL_FINGER, false);
 	}
-	//input_report_key(rmi4_data->input_dev, BTN_TOUCH, 0);
 #ifndef TYPE_B_PROTOCOL
 		input_mt_sync(rmi4_data->input_dev);
 #endif
@@ -1190,8 +1186,6 @@ static int synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 	int retval;
 	unsigned char touch_count = 0;
 	unsigned char intr[MAX_INTR_REGISTERS];
-	struct synaptics_rmi4_fn *fhandler;
-	struct synaptics_rmi4_exp_fn *exp_fhandler;
 	struct synaptics_rmi4_device_info *rmi;
 
 	rmi = &(rmi4_data->rmi4_mod_info);
@@ -1206,30 +1200,8 @@ static int synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->num_of_intr_regs);
 	if (retval < 0)
 		return retval;
-
-	/*
-	 * Traverse the function handler list and service the source(s)
-	 * of the interrupt accordingly.
-	 */
-	list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
-		if (fhandler->num_of_data_sources) {
-			if (fhandler->intr_mask &
-					intr[fhandler->intr_reg_num]) {
-				touch_count += synaptics_rmi4_f11_abs_report(rmi4_data, fhandler);
-			}
-		}
-	}
-
-	mutex_lock(&exp_fn_list_mutex);
-	if (!list_empty(&exp_fn_list)) {
-		list_for_each_entry(exp_fhandler, &exp_fn_list, link) {
-			if (exp_fhandler->inserted &&
-					(exp_fhandler->func_attn != NULL))
-				exp_fhandler->func_attn(rmi4_data, intr[0]);
-		}
-	}
-	mutex_unlock(&exp_fn_list_mutex);
-
+	
+	touch_count += synaptics_rmi4_f11_abs_report(rmi4_data);
 	return touch_count;
 }
 
@@ -1238,8 +1210,6 @@ static int nui_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 	int retval;
 	unsigned char touch_count = 0;
 	unsigned char intr[MAX_INTR_REGISTERS];
-	struct synaptics_rmi4_fn *fhandler;
-	struct synaptics_rmi4_exp_fn *exp_fhandler;
 	struct synaptics_rmi4_device_info *rmi;
 	rmi = &(rmi4_data->rmi4_mod_info);
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
@@ -1248,23 +1218,8 @@ static int nui_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->num_of_intr_regs);
 	if (retval < 0)
 		return retval;
-	list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
-		if (fhandler->num_of_data_sources) {
-			if (fhandler->intr_mask &
-					intr[fhandler->intr_reg_num]) {
-				touch_count += nui_rmi4_f11_abs_report(rmi4_data, fhandler);
-			}
-		}
-	}
-	mutex_lock(&exp_fn_list_mutex);
-	if (!list_empty(&exp_fn_list)) {
-		list_for_each_entry(exp_fhandler, &exp_fn_list, link) {
-			if (exp_fhandler->inserted &&
-					(exp_fhandler->func_attn != NULL))
-				exp_fhandler->func_attn(rmi4_data, intr[0]);
-		}
-	}
-	mutex_unlock(&exp_fn_list_mutex);
+
+	touch_count += nui_rmi4_f11_abs_report(rmi4_data);
 	return touch_count;
 }
 
