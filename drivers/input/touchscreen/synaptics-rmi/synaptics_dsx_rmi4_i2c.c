@@ -931,7 +931,7 @@ exit:
 	return retval;
 }
 
- /**
+/**
  * synaptics_rmi4_f11_abs_report()
  *
  * Called by synaptics_rmi4_report_touch() when valid Function $11
@@ -942,7 +942,8 @@ exit:
  * necessary coordinate manipulation, reports the finger data to
  * the input subsystem, and returns the number of fingers detected.
  */
-static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
+static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
+		struct synaptics_rmi4_fn *fhandler)
 {
 	int retval;
 	unsigned char touch_count = 0; /* number of touch points */
@@ -953,10 +954,10 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 	unsigned char finger_shift;
 	unsigned char finger_status;
 	unsigned char prev_status;
-	//unsigned char data_reg_blk_size;
+	unsigned char data_reg_blk_size;
 	unsigned char finger_status_reg[3];
 	unsigned char data[F11_STD_DATA_LEN];
-	//unsigned short data_addr;
+	unsigned short data_addr;
 	unsigned short data_offset;
 	int x;
 	int y;
@@ -975,13 +976,11 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 	 */
 	//fingers_supported = fhandler->num_of_data_points;
 	//num_of_finger_status_regs = 2; // correct me: (5 + 3) / 4 = 2
-	//data_addr = fhandler->full_addr.data_base;
-	//data_reg_blk_size = fhandler->size_of_data_register_block;
-	//data_addr = 21;
-	//data_reg_blk_size = 5;
+	data_addr = fhandler->full_addr.data_base;
+	data_reg_blk_size = fhandler->size_of_data_register_block;
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			21,
+			data_addr,
 			finger_status_reg,
 			2);
 	if (retval < 0)
@@ -1009,11 +1008,13 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 				MT_TOOL_FINGER, finger_status);
 
 		if (finger_status) {
-			data_offset = 23 +(finger * 5);
+			data_offset = data_addr +
+					2 +
+					(finger * data_reg_blk_size);
 			retval = synaptics_rmi4_i2c_read(rmi4_data,
 					data_offset,
 					data,
-					5);
+					data_reg_blk_size);
 			if (retval < 0)
 				return 0;
 
@@ -1074,7 +1075,8 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 	return touch_count;
 }
 
-static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
+static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
+		struct synaptics_rmi4_fn *fhandler)
 {
 	int retval;
 	unsigned char touch_count = 0;
@@ -1082,22 +1084,20 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 	unsigned char finger;
 	unsigned char finger_shift;
 	unsigned char finger_status = false;
-	//unsigned char data_reg_blk_size;
+	unsigned char data_reg_blk_size;
 	unsigned char finger_status_reg[3];
 	unsigned char data[F11_STD_DATA_LEN];
-	//unsigned short data_addr;
+	unsigned short data_addr;
 	unsigned short data_offset;
 	int x;
 	int y;
 	struct synaptics_rmi4_finger_state currentf;
 
-	//data_addr = fhandler->full_addr.data_base;
-	//data_reg_blk_size = fhandler->size_of_data_register_block;
-	//data_addr = 21;
-	//data_reg_blk_size = 5;
+	data_addr = fhandler->full_addr.data_base;
+	data_reg_blk_size = fhandler->size_of_data_register_block;
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			21,
+			data_addr,
 			finger_status_reg,
 			2);
 	if (retval < 0)
@@ -1121,11 +1121,13 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 				& MASK_2BIT;
 		currentf.status = finger_status;
 		if (finger_status) {
-			data_offset = 23 + (finger * 5);
+			data_offset = data_addr +
+					2 +
+					(finger * data_reg_blk_size);
 			retval = synaptics_rmi4_i2c_read(rmi4_data,
 					data_offset,
 					data,
-					5);
+					data_reg_blk_size);
 			if (retval < 0)
 				return 0;
 			x = (data[0] << 4) | (data[2] & MASK_4BIT);
@@ -1166,9 +1168,6 @@ static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
 		input_mt_report_slot_state(rmi4_data->input_dev,
 				MT_TOOL_FINGER, false);
 	}
-#ifndef TYPE_B_PROTOCOL
-		input_mt_sync(rmi4_data->input_dev);
-#endif
 	input_sync(rmi4_data->input_dev);
 }
 
@@ -1186,6 +1185,8 @@ static int synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 	int retval;
 	unsigned char touch_count = 0;
 	unsigned char intr[MAX_INTR_REGISTERS];
+	struct synaptics_rmi4_fn *fhandler;
+	//struct synaptics_rmi4_exp_fn *exp_fhandler;
 	struct synaptics_rmi4_device_info *rmi;
 
 	rmi = &(rmi4_data->rmi4_mod_info);
@@ -1200,8 +1201,20 @@ static int synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->num_of_intr_regs);
 	if (retval < 0)
 		return retval;
-	
-	touch_count += synaptics_rmi4_f11_abs_report(rmi4_data);
+
+	/*
+	 * Traverse the function handler list and service the source(s)
+	 * of the interrupt accordingly.
+	 */
+	list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
+		if (fhandler->num_of_data_sources) {
+			if (fhandler->intr_mask &
+					intr[fhandler->intr_reg_num]) {
+				touch_count += synaptics_rmi4_f11_abs_report(rmi4_data, fhandler);
+			}
+		}
+	}
+
 	return touch_count;
 }
 
@@ -1210,6 +1223,8 @@ static int nui_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 	int retval;
 	unsigned char touch_count = 0;
 	unsigned char intr[MAX_INTR_REGISTERS];
+	struct synaptics_rmi4_fn *fhandler;
+	//struct synaptics_rmi4_exp_fn *exp_fhandler;
 	struct synaptics_rmi4_device_info *rmi;
 	rmi = &(rmi4_data->rmi4_mod_info);
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
@@ -1218,8 +1233,14 @@ static int nui_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			rmi4_data->num_of_intr_regs);
 	if (retval < 0)
 		return retval;
-
-	touch_count += nui_rmi4_f11_abs_report(rmi4_data);
+	list_for_each_entry(fhandler, &rmi->support_fn_list, link) {
+		if (fhandler->num_of_data_sources) {
+			if (fhandler->intr_mask &
+					intr[fhandler->intr_reg_num]) {
+				touch_count += nui_rmi4_f11_abs_report(rmi4_data, fhandler);
+			}
+		}
+	}
 	return touch_count;
 }
 
@@ -1326,13 +1347,13 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 
 		//ngxson_dt2w
 		if((no_suspend_touch)&&(scr_suspended)) {
-			irq_flags = IRQF_NO_SUSPEND | IRQF_FORCE_RESUME | IRQF_TRIGGER_MASK;	
+			irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_NO_SUSPEND;	
 		} else {
 			irq_flags = platform_data->irq_type;
 		}
 		//end
 
-		printk("ngxson: synaptics enable irq");
+		printk("ngxson: synaptics enable irq\n");
 
 		//retval = request_any_context_irq(rmi4_data->irq, synaptics_rmi4_irq,
 		//IRQF_TRIGGER_RISING, DRIVER_NAME, rmi4_data);
@@ -1349,7 +1370,7 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 		rmi4_data->irq_enabled = true;
 	} else {
 		if (rmi4_data->irq_enabled) {
-			printk("ngxson: synaptics disable irq");
+			printk("ngxson: synaptics disable irq\n");
 			disable_irq(rmi4_data->irq);
 			free_irq(rmi4_data->irq, rmi4_data);
 			rmi4_data->irq_enabled = false;
@@ -2522,6 +2543,7 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 		doubletap2wake_reset();
 		reset_device(rmi4_data);
 		synaptics_rmi4_irq_enable(rmi4_data, true);
+		//enable_irq(rmi4_data->irq);
 		enable_irq_wake(rmi4_data->irq);
 		//printk( "ngxson: debug dt2w on\n");
 		if (rmi4_data->full_pm_cycle)
