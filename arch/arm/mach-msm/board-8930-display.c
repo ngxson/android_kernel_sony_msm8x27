@@ -107,10 +107,12 @@ static struct mipi_dsi_panel_platform_data novatek_pdata;
 #define DISP_RST_GPIO 58
 #define DISP_3D_2D_MODE 1
 
+static int isGPIOInit = 0;
+
 static int msm_fb_dsi_client_reset(int hold)
 {
 	int retVal = 0;
-	static int isGPIOInit = 0;
+	
 	pr_info("[DISPLAY] +%s(%d)\n", __func__, hold);
 
 	/* GPIO INIT */
@@ -130,12 +132,12 @@ static int msm_fb_dsi_client_reset(int hold)
 	if (hold) {
 		retVal = gpio_direction_output(DISP_RST_GPIO , 0);
 	} else {
-		msleep(2);
+		//msleep(2);
 		retVal = gpio_direction_output(DISP_RST_GPIO , 1);
-		msleep(2);
-		retVal |= gpio_direction_output(DISP_RST_GPIO , 0);
-		msleep(2);
-		retVal |= gpio_direction_output(DISP_RST_GPIO , 1);
+		//msleep(2);
+		//retVal |= gpio_direction_output(DISP_RST_GPIO , 0);
+		//msleep(2);
+		//retVal |= gpio_direction_output(DISP_RST_GPIO , 1);
 	}
 
 error:
