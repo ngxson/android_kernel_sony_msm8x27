@@ -1164,6 +1164,7 @@ static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
 		rmi4_data->finger_state[finger].y = 0;
 		rmi4_data->finger_state[finger].wx = 0;
 		rmi4_data->finger_state[finger].wy = 0;
+		rmi4_data->finger_state[finger].status = false;
 		input_mt_slot(rmi4_data->input_dev, finger);
 		input_mt_report_slot_state(rmi4_data->input_dev,
 				MT_TOOL_FINGER, false);
@@ -1346,11 +1347,11 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 			return retval;
 
 		//ngxson_dt2w
-		if((no_suspend_touch)&&(scr_suspended)) {
-			irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_NO_SUSPEND;	
-		} else {
-			irq_flags = platform_data->irq_type;
-		}
+		//if((no_suspend_touch)&&(scr_suspended)) {
+			irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_NO_SUSPEND | IRQF_EARLY_RESUME;	
+		//} else {
+		//	irq_flags = platform_data->irq_type;
+		//}
 		//end
 
 		printk("ngxson: synaptics enable irq\n");
@@ -2260,7 +2261,7 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 //end
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
-	rmi4_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	rmi4_data->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 	rmi4_data->early_suspend.suspend = synaptics_rmi4_early_suspend;
 	rmi4_data->early_suspend.resume = synaptics_rmi4_late_resume;
 	register_early_suspend(&rmi4_data->early_suspend);

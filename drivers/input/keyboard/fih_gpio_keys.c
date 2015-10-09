@@ -351,15 +351,13 @@ static bool pressed_vol_up = false;
 static void nui_torch(int mode) {
   unsigned int ret = 0;
   //char *argv[] = { "/usr/bin/nui_torch", "help!", NULL };
-  static char *envp[] = {"HOME=/", "PATH=/sbin:/bin:/system/xbin:/system/bin", NULL };
-  //char *argvon[] = { "/system/bin/nui_torch_on", "1",  NULL };
-  //char *argvoff[] = { "/system/bin/nui_torch_off", "2", NULL };
-  char *argvon[] = { "/system/xbin/su", "-c", "/system/bin/nui_torch_on", NULL };
-  char *argvoff[] = { "/system/xbin/su", "-c", "/system/bin/nui_torch_off", NULL };
+  static char *envp[] = {"HOME=/", "PATH=/sbin:/system/sbin:/system/bin:/system/xbin", NULL };
+  char *argvon[] = { "/system/bin/nui_torch_on", NULL };
+  char *argvoff[] = { "/system/bin/nui_torch_off", NULL };
   if(mode == 1) {
-	  ret = call_usermodehelper( argvon[0], argvon, envp, UMH_WAIT_PROC );
+	  ret = call_usermodehelper( argvon[0], argvon, envp, 1 );
   } else {
-	  ret = call_usermodehelper( argvoff[0], argvoff, envp, UMH_WAIT_PROC );
+	  ret = call_usermodehelper( argvoff[0], argvoff, envp, 1 );
   }
 
   printk("ngxson:umh done %d\n", ret);
