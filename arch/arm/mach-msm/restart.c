@@ -36,10 +36,6 @@
 #include "timer.h"
 #include <linux/fih_sw_info.h> //MTD-KERNEL-DL-POC-00
 
-#ifdef CONFIG_KEXEC_HARDBOOT
-#include <asm/kexec.h>
-#endif
-
 #define WDT0_RST	0x38
 #define WDT0_EN		0x40
 #define WDT0_BARK_TIME	0x4C
@@ -375,14 +371,6 @@ static int __init msm_pmic_restart_init(void)
 
 late_initcall(msm_pmic_restart_init);
 
-#ifdef CONFIG_KEXEC_HARDBOOT
-static void msm_kexec_hardboot_hook(void)
-{
-	// Set PMIC to restart-on-poweroff
-	pm8xxx_reset_pwr_off(1);
-}
-#endif
-
 static int __init msm_restart_init(void)
 {
 #ifdef CONFIG_MSM_DLOAD_MODE
@@ -397,10 +385,6 @@ static int __init msm_restart_init(void)
 	msm_tmr0_base = msm_timer_get_timer0_base();
 	restart_reason = MSM_IMEM_BASE + RESTART_REASON_ADDR;
 	pm_power_off = msm_power_off;
-	
-#ifdef CONFIG_KEXEC_HARDBOOT
-	kexec_hardboot_hook = msm_kexec_hardboot_hook;
-#endif
 
 	return 0;
 }
