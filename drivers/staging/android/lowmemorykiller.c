@@ -45,17 +45,11 @@
 
 static uint32_t lowmem_debug_level = 1;
 static int lowmem_adj[6] = {
-	0,
-	1,
-	6,
-	12,
+	0,1,2,3,7,15
 };
 static int lowmem_adj_size = 4;
 static int lowmem_minfree[6] = {
-	3 * 512,	/* 6MB */
-	2 * 1024,	/* 8MB */
-	4 * 1024,	/* 16MB */
-	16 * 1024,	/* 64MB */
+	6400,8960,19200,23040,38400,64000
 };
 static int lowmem_minfree_size = 4;
 static int lmk_fast_run = 1;
@@ -467,21 +461,21 @@ static const struct kparam_array __param_arr_adj = {
 };
 #endif
 
-module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
+module_param_named(cost, lowmem_shrinker.seeks, int, 0664);
 #ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_AUTODETECT_OOM_ADJ_VALUES
 __module_param_call(MODULE_PARAM_PREFIX, adj,
 		    &lowmem_adj_array_ops,
 		    .arr = &__param_arr_adj,
-		    S_IRUGO | S_IWUSR, -1);
+		    0664, -1);
 __MODULE_PARM_TYPE(adj, "array of int");
 #else
 module_param_array_named(adj, lowmem_adj, int, &lowmem_adj_size,
-			 S_IRUGO | S_IWUSR);
+			 0664);
 #endif
 module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
-			 S_IRUGO | S_IWUSR);
-module_param_named(debug_level, lowmem_debug_level, uint, S_IRUGO | S_IWUSR);
-module_param_named(lmk_fast_run, lmk_fast_run, int, S_IRUGO | S_IWUSR);
+			 0664);
+module_param_named(debug_level, lowmem_debug_level, uint, 0664);
+module_param_named(lmk_fast_run, lmk_fast_run, int, 0664);
 
 module_init(lowmem_init);
 module_exit(lowmem_exit);
