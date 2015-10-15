@@ -37,6 +37,7 @@ int nui_proximity_sens = 0;
 int brlock = 0;
 int nui_which_vol = 0;
 bool focus2torch = false;
+bool hn_enable = false;
 
 /*
  * SYSFS stuff below here
@@ -533,6 +534,34 @@ static ssize_t focus2torch_dump(struct device *dev,
 }
 static DEVICE_ATTR(focus2torch, (S_IWUGO|S_IRUGO),
 	focus2torch_show, focus2torch_dump);
+	
+// hide navigation bar mode
+static ssize_t hn_enable_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", hn_enable);
+}
+
+static ssize_t hn_enable_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	if(val == 1) {
+			hn_enable = true;
+		} else if (val == 0) {
+			hn_enable = false;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+static DEVICE_ATTR(hn_enable, (S_IWUGO|S_IRUGO),
+	hn_enable_show, hn_enable_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -567,6 +596,7 @@ static int __init nuisetting_init(void)
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_brlock.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_which_vol.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus2torch.attr);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_hn_enable.attr);
 
 	return 0;
 }

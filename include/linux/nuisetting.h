@@ -97,4 +97,7 @@ extern int nui_which_vol;
 // Press focus to turn on torch
 extern bool focus2torch;
 
+//hide navigation bar mode
+extern bool hn_enable;
+
 #endif	/* _LINUX_NUISETTING_H */
