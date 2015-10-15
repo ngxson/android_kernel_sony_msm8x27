@@ -122,6 +122,11 @@ static int s2m_tap_time_pre = 0;
 static int s2m_y = 0;
 static bool s2m_right = true;
 static bool s2m_finger = false;
+//hide nav
+static bool hn_active;
+static bool hn_detecting;
+static unsigned char hn_btn;
+static cputime64_t hn_time;
 //static bool nui_enabled_irq = false;
 //end
 
@@ -798,14 +803,7 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 	unsigned char finger_status_reg[3];
 	unsigned char data[F11_STD_DATA_LEN];
 	unsigned short data_offset;
-	int x;
-	int y;
-	int wx;
-	int wy;
-	int prev_x;
-	int prev_y;
-	int prev_wx;
-	int prev_wy;
+	int x, y, wx, wy, prev_x, prev_y, prev_wx, prev_wy;
 
 	/*
 	 * The number of finger status registers is determined by the
@@ -907,6 +905,31 @@ static int synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 	return touch_count;
 }
 
+static void hn_pressbtn(struct work_struct *hn_pressbtn_work) {
+	unsigned int code;
+	
+	if (!mutex_trylock(&pwrkeyworklock))
+		return;
+		
+	switch(hn_btn) {
+		case 0:
+			code = KEY_BACK;
+			break;
+		case 1:
+			code = KEY_HOMEPAGE;
+			break;
+		default:
+			code = 580;
+		}
+	vibrate(32);
+	btn_press(code, true);
+	msleep(D2W_PWRKEY_DUR);
+	btn_press(code, false);
+	mutex_unlock(&pwrkeyworklock);
+	return;
+}
+static DECLARE_WORK(hn_pressbtn_work, hn_pressbtn);
+
 static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
@@ -919,14 +942,7 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 	unsigned char finger_status_reg[3];
 	unsigned char data[F11_STD_DATA_LEN];
 	unsigned short data_offset;
-	int x;
-	int y;
-	int wx;
-	int wy;
-	int prev_x;
-	int prev_y;
-	int prev_wx;
-	int prev_wy;
+	int x, y, wx, wy, prev_x, prev_y, prev_wx, prev_wy;
 
 	retval = synaptics_rmi4_i2c_read(rmi4_data,
 			data_addr,
@@ -967,49 +983,71 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 			touch_count++;
 		}
 		prev_status = rmi4_data->finger_state[finger].status;
-		if(!prev_status && finger_status) printk("ngxson: press   %d %d\n", x, y);
-		if(prev_status && !finger_status) printk("ngxson: release\n");
 		prev_x = rmi4_data->finger_state[finger].x;
 		prev_y = rmi4_data->finger_state[finger].y;
 		prev_wx = rmi4_data->finger_state[finger].wx;
 		prev_wy = rmi4_data->finger_state[finger].wy;
-		if (!prev_status && finger_status) {
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_POSITION_X, x);
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_POSITION_Y, y);
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_TOUCH_MAJOR, max(wx, wy));
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_TOUCH_MINOR, min(wx, wy));
-			rmi4_data->finger_state[finger].x = x;
-			rmi4_data->finger_state[finger].y = y;
-			rmi4_data->finger_state[finger].wx = wx;
-			rmi4_data->finger_state[finger].wy = wy;
-		} else if (prev_status && finger_status) {
-			if (x != prev_x) {
+		if (!prev_status && finger_status) { //finger press
+			if(y < 990) {
 				input_report_abs(rmi4_data->input_dev,
 						ABS_MT_POSITION_X, x);
-				rmi4_data->finger_state[finger].x = x;
-			}
-			if (y != prev_y) {
 				input_report_abs(rmi4_data->input_dev,
 						ABS_MT_POSITION_Y, y);
-				rmi4_data->finger_state[finger].y = y;
-			}
-			if ((wx != prev_wx) || (wy != prev_wy)) {
 				input_report_abs(rmi4_data->input_dev,
 						ABS_MT_TOUCH_MAJOR, max(wx, wy));
 				input_report_abs(rmi4_data->input_dev,
 						ABS_MT_TOUCH_MINOR, min(wx, wy));
+				rmi4_data->finger_state[finger].x = x;
+				rmi4_data->finger_state[finger].y = y;
 				rmi4_data->finger_state[finger].wx = wx;
 				rmi4_data->finger_state[finger].wy = wy;
+			} else {
+				hn_active = true;
+				hn_time = ktime_to_ms(ktime_get());
+				hn_detecting = true;
+				if(x < 341) { //back btn
+					hn_btn = 0;
+				} else if (x > 683) { //recent btn
+					hn_btn = 2;
+				} else { //home btn
+					hn_btn = 1;
+				}
 			}
+		} else if (prev_status && finger_status) { //on moving
+			if(hn_active) {
+				if((y < 912) && (hn_detecting)) {
+					if(((ktime_to_ms(ktime_get()) - hn_time) > 12) &&
+						((ktime_to_ms(ktime_get()) - hn_time) < 200)) //check time 12<t<200 (ms)
+						schedule_work(&hn_pressbtn_work);
+					hn_detecting = false;
+				}
+			} else {
+				if (x != prev_x) {
+					input_report_abs(rmi4_data->input_dev,
+							ABS_MT_POSITION_X, x);
+					rmi4_data->finger_state[finger].x = x;
+				}
+				if (y != prev_y) {
+					input_report_abs(rmi4_data->input_dev,
+							ABS_MT_POSITION_Y, y);
+					rmi4_data->finger_state[finger].y = y;
+				}
+				if ((wx != prev_wx) || (wy != prev_wy)) {
+					input_report_abs(rmi4_data->input_dev,
+							ABS_MT_TOUCH_MAJOR, max(wx, wy));
+					input_report_abs(rmi4_data->input_dev,
+							ABS_MT_TOUCH_MINOR, min(wx, wy));
+					rmi4_data->finger_state[finger].wx = wx;
+					rmi4_data->finger_state[finger].wy = wy;
+				}
+			}
+		} else if (prev_status && !finger_status) { //release finger
+			hn_active = false;
 		}
 		rmi4_data->finger_state[finger].status = finger_status;
 	}
 
-	input_sync(rmi4_data->input_dev);
+	if(!hn_active) input_sync(rmi4_data->input_dev);
 
 	return touch_count;
 }

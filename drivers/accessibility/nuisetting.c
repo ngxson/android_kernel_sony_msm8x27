@@ -296,6 +296,7 @@ static ssize_t camera_key_dump(struct device *dev,
 		(val == KEY_HOMEPAGE) ||
 		(val == KEY_VOLUMEDOWN) ||
 		(val == KEY_VOLUMEUP) ||
+		(val == 580) ||
 		(val == 0)) {
 				camera_key = val;
 		} else return -EINVAL;
@@ -336,6 +337,7 @@ static ssize_t focus_key_dump(struct device *dev,
 		(val == KEY_HOMEPAGE) ||
 		(val == KEY_VOLUMEDOWN) ||
 		(val == KEY_VOLUMEUP) ||
+		(val == 580) ||
 		(val == 0)) {
 				focus_key = val;
 		} else return -EINVAL;
@@ -374,6 +376,7 @@ static ssize_t camera_key_scroff_dump(struct device *dev,
 		(val == KEY_SEARCH) ||
 		(val == KEY_MENU) ||
 		(val == KEY_HOMEPAGE) ||
+		(val == 580) ||
 		(val == 0)) {
 				camera_key_scroff = val;
 		} else return -EINVAL;
@@ -412,6 +415,7 @@ static ssize_t focus_key_scroff_dump(struct device *dev,
 		(val == KEY_SEARCH) ||
 		(val == KEY_MENU) ||
 		(val == KEY_HOMEPAGE) ||
+		(val == 580) ||
 		(val == 0)) {
 				focus_key_scroff = val;
 		} else return -EINVAL;
