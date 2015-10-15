@@ -93,6 +93,8 @@
 #define S2W_TIMEOUT_MAX         1500
 #define S2W_DELTA_X               250
 
+static unsigned short data_addr_f11;
+static unsigned char data_reg_blk_size_f11;
 bool nui_suspend = false;
 
 static cputime64_t tap_time_pre = 0;
@@ -1720,15 +1722,21 @@ error_exit:
 }
 
 static int synaptics_rmi4_alloc_fh(struct synaptics_rmi4_fn **fhandler,
-		struct synaptics_rmi4_fn_desc *rmi_fd, int page_number)
+		struct synaptics_rmi4_fn_desc *rmi_fd, int page_number, bool isf11)
 {
 	*fhandler = kzalloc(sizeof(**fhandler), GFP_KERNEL);
 	if (!(*fhandler))
 		return -ENOMEM;
 
-	(*fhandler)->full_addr.data_base =
+	if(isf11) {
+		data_addr_f11  =
 			(rmi_fd->data_base_addr |
 			(page_number << 8));
+	} else {
+		(*fhandler)->full_addr.data_base =
+			(rmi_fd->data_base_addr |
+			(page_number << 8));
+	}
 	(*fhandler)->full_addr.ctrl_base =
 			(rmi_fd->ctrl_base_addr |
 			(page_number << 8));
@@ -1831,7 +1839,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 					break;
 
 				retval = synaptics_rmi4_alloc_fh(&fhandler,
-						&rmi_fd, page_number);
+						&rmi_fd, page_number, true);
 				if (retval < 0) {
 					printk( "ITUCH : Device(%s), Failed to alloc for F%d\n", dev_name( &rmi4_data->i2c_client->dev ), rmi_fd.fn_number );
 					return retval;
@@ -1847,7 +1855,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 					break;
 
 				retval = synaptics_rmi4_alloc_fh(&fhandler,
-						&rmi_fd, page_number);
+						&rmi_fd, page_number, false);
 				if (retval < 0) {
 					printk( "ITUCH : Device(%s), Failed to alloc for F%d\n", dev_name( &rmi4_data->i2c_client->dev ), rmi_fd.fn_number );
 					return retval;
@@ -1863,7 +1871,7 @@ static int synaptics_rmi4_query_device(struct synaptics_rmi4_data *rmi4_data)
 					break;
 
 				retval = synaptics_rmi4_alloc_fh(&fhandler,
-						&rmi_fd, page_number);
+						&rmi_fd, page_number, false);
 				if (retval < 0) {
 					printk( "ITUCH : Device(%s), Failed to alloc for F%d\n", dev_name( &rmi4_data->i2c_client->dev ), rmi_fd.fn_number );
 					return retval;
