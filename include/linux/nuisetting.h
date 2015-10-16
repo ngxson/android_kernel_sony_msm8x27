@@ -99,5 +99,6 @@ extern bool focus2torch;
 
 //hide navigation bar mode
 extern bool hn_enable;
+void hn_update_sett(void);
 
 #endif	/* _LINUX_NUISETTING_H */

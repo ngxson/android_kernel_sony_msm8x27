@@ -558,8 +558,10 @@ static ssize_t hn_enable_dump(struct device *dev,
 	if (rc) return -EINVAL;
 	if(val == 1) {
 			hn_enable = true;
+			hn_update_sett();
 		} else if (val == 0) {
 			hn_enable = false;
+			hn_update_sett();
 		} else return -EINVAL;
 
 	return strnlen(buf, count);
