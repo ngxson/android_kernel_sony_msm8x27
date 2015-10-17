@@ -550,14 +550,12 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 							doubletap2wake_reset();
 							dt2w_ok = false;
 						} else {
-							if (dt2w_debug) printk("ngxson: pressed x=%d y=%d\n", touch_info->x, touch_info->y);
 							dt2w_get_x = touch_info->x;
 							dt2w_get_y = touch_info->y;
 							dt2w_ok = true;
 						}
 					}
 					if (!state_down){ 
-						if (dt2w_debug) printk("ngxson: dt2w x=%d y=%d\n", touch_info->x, touch_info->y);
 						dt2w_got_xy = true;
 						if (!dt2w_pressed) detect_doubletap2wake((touch_info->x), (touch_info->y));
 						else if (dt2w_ok) {
@@ -570,7 +568,6 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 				//s2w
 				if((state_down) && (s2w_switch > 0)) {
 					if(!s2w_finger) {
-						if (dt2w_debug) printk("ngxson: pressed x=%d y=%d\n", touch_info->x, touch_info->y);
 						if((finger>0) || ((touch_info->y) < 950)) {
 							s2w_reset();
 						} else {
@@ -582,7 +579,6 @@ static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
 					}
 				}
 				if ((!state_down) && (s2w_finger)){ 
-					if (dt2w_debug) printk("ngxson: s2w x=%d y=%d\n", touch_info->x, touch_info->y);
 					s2w_reset();
 				}
 				
@@ -1033,40 +1029,16 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 	prev_y = rmi4_data->finger_state[finger].y;
 	prev_wx = rmi4_data->finger_state[finger].wx;
 	prev_wy = rmi4_data->finger_state[finger].wy;
-	if (!prev_status && finger_status) { //finger press
-		if(y < 990) {
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_POSITION_X, x);
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_POSITION_Y, y);
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_TOUCH_MAJOR, max(wx, wy));
-			input_report_abs(rmi4_data->input_dev,
-					ABS_MT_TOUCH_MINOR, min(wx, wy));
-			rmi4_data->finger_state[finger].x = x;
-			rmi4_data->finger_state[finger].y = y;
-			rmi4_data->finger_state[finger].wx = wx;
-			rmi4_data->finger_state[finger].wy = wy;
-		} else {
-			hn_active = true;
-			hn_time = ktime_to_ms(ktime_get());
-			hn_detecting = true;
-			if(x < 341) { //back btn
-				hn_btn = 0;
-			} else if (x > 683) { //recent btn
-				hn_btn = 2;
-			} else { //home btn
-				hn_btn = 1;
-			}
-		}
-	} else if (prev_status && finger_status) { //on moving
+	if (prev_status && finger_status) { //on moving
 		if(hn_active) {
-			if((y < 912) && (hn_detecting)) {
+			if((y < 960) && (hn_detecting)) {
 				if(((ktime_to_ms(ktime_get()) - hn_time) > 12) &&
-					((ktime_to_ms(ktime_get()) - hn_time) < 200)) //check time 12<t<200 (ms)
+					((ktime_to_ms(ktime_get()) - hn_time) < 250)) //check time 12<t<200 (ms)
 					schedule_work(&hn_pressbtn_work);
 				hn_detecting = false;
 			}
+			rmi4_data->finger_state[finger].x = x;
+			rmi4_data->finger_state[finger].y = y;
 		} else {
 			if (x != prev_x) {
 				input_report_abs(rmi4_data->input_dev,
@@ -1087,7 +1059,45 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 				rmi4_data->finger_state[finger].wy = wy;
 			}
 		}
+	} else if (!prev_status && finger_status) { //finger press
+		if(y < 985) {
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_POSITION_X, x);
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_POSITION_Y, y);
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_TOUCH_MAJOR, max(wx, wy));
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_TOUCH_MINOR, min(wx, wy));
+			rmi4_data->finger_state[finger].wx = wx;
+			rmi4_data->finger_state[finger].wy = wy;
+		} else {
+			hn_active = true;
+			hn_time = ktime_to_ms(ktime_get());
+			hn_detecting = true;
+			if(x < 341) { //back btn
+				hn_btn = 0;
+			} else if (x > 683) { //recent btn
+				hn_btn = 2;
+			} else { //home btn
+				hn_btn = 1;
+			}
+		}
+		rmi4_data->finger_state[finger].x = x;
+		rmi4_data->finger_state[finger].y = y;
 	} else if (prev_status && !finger_status) { //release finger
+		if(hn_active && (prev_y > 980)) {
+			input_mt_report_slot_state(rmi4_data->input_dev,
+				MT_TOOL_FINGER, true);
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_POSITION_X, prev_x);
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_POSITION_Y, prev_y);
+			input_sync(rmi4_data->input_dev);
+			
+			input_mt_report_slot_state(rmi4_data->input_dev,
+				MT_TOOL_FINGER, false);
+		}
 		hn_active = false;
 	}
 	rmi4_data->finger_state[finger].status = finger_status;
