@@ -127,6 +127,7 @@ static bool hn_active;
 static bool hn_detecting;
 static unsigned char hn_btn;
 static cputime64_t hn_time;
+//
 static unsigned char reg_index;
 static unsigned char finger_shift;
 static unsigned char finger_status;
@@ -233,7 +234,7 @@ static struct mutex exp_fn_list_mutex;
 static struct list_head exp_fn_list;
 
 //for keypress
-void btn_press(int i, bool b) {
+void inline btn_press(int i, bool b) {
 	if(b) {
 		input_event(doubletap2wake_pwrdev, EV_KEY, i, 1);
 		input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
@@ -260,12 +261,12 @@ static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr
 static DECLARE_WORK(doubletap2wake_presspwr_work, doubletap2wake_presspwr);
 
 /* PowerKey trigger */
-static void doubletap2wake_pwrtrigger(void) {
+static void inline doubletap2wake_pwrtrigger(void) {
 	schedule_work(&doubletap2wake_presspwr_work);
 	return;
 }
 
-void doubletap2wake_reset(void) {
+void inline doubletap2wake_reset(void) {
 	//printk( "ngxson : dt2w doubletap2wake_reset\n");
 	tap_time_pre = 0;
 	x_pre = 0;
@@ -310,14 +311,14 @@ static void detect_doubletap2wake(int x, int y)
 //end
 
 //s2w
-void s2w_reset(void) {
+void inline s2w_reset(void) {
 	s2w_tap_time_pre = 0;
 	s2w_x = 0;
 	s2w_finger = false;
 }
 
 //s2m
-void s2m_reset(void) {
+void inline s2m_reset(void) {
 	s2m_finger = false;
 	s2m_y = 0;
 	s2m_tap_time_pre = 0;
@@ -507,119 +508,93 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 	return count;
 }
 
-static void nui_rmi4_proc_fngr(struct synaptics_rmi4_data *rmi4_data,
-		struct synaptics_rmi4_finger_state *currentf,
-		unsigned char finger, unsigned char touch_count)
+static void inline nui_rmi4_proc_fngr_press(unsigned int x, unsigned int y)
 {
-	int x = currentf->x;
-	int y = currentf->y;
-
-	rmi4_data->finger_state[finger].status = currentf->status;
-
-	{
-		struct	touch_information
-		{
-			unsigned char	status;
-			int		x, y;
-			unsigned	count;
-		};
-
-		static struct touch_information	finger_info[] =
-		{
-			{ 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }
-		};
-
-		if( finger < sizeof( finger_info ) / sizeof( *finger_info ) )
-		{
-			struct touch_information	*touch_info = finger_info + finger;
-			char	state_down = !touch_info->status && currentf->status, state_up = touch_info->status && !currentf->status;
-			char	show_log = state_down | state_up;
-
-			if( !state_up )
-				touch_info->x = x, touch_info->y = y, ++touch_info->count;
-
-			if( show_log )
-			{
-				touch_info->status	= !touch_info->status;
-				if (dt2w_switch > 0) {
-					if(state_down) {
-						dt2w_pressed = true;
-						if((finger>0) || ((touch_info->x) <100) || ((touch_info->x)>900) 
-								|| ((touch_info->y)<50) || ((touch_info->y) >950)) {
-								/* Prevent sliding from screen edge */
-							doubletap2wake_reset();
-							dt2w_ok = false;
-						} else {
-							dt2w_get_x = touch_info->x;
-							dt2w_get_y = touch_info->y;
-							dt2w_ok = true;
-						}
-					}
-					if (!state_down){ 
-						dt2w_got_xy = true;
-						if (!dt2w_pressed) detect_doubletap2wake((touch_info->x), (touch_info->y));
-						else if (dt2w_ok) {
-							detect_doubletap2wake(dt2w_get_x, dt2w_get_y);
-							dt2w_ok = false;
-							dt2w_pressed = false;
-						}
-					}
-				}
-				//s2w
-				if((state_down) && (s2w_switch > 0)) {
-					if(!s2w_finger) {
-						if((finger>0) || ((touch_info->y) < 950)) {
-							s2w_reset();
-						} else {
-							s2w_finger = true;
-							s2w_tap_time_pre = ktime_to_ms(ktime_get());
-							s2w_x = touch_info->x;
-							s2w_scron = false;
-						}
-					}
-				}
-				if ((!state_down) && (s2w_finger)){ 
-					s2w_reset();
-				}
-				
-				//media control
-				if((state_down) && (s2m > 0)) {
-					if(!s2m_finger) {
-						if((finger>0) || ((touch_info->y) > 256)) {
-							s2m_reset();
-						} else if (((touch_info->x) > 128) && ((touch_info->x) < 896)) {
-							s2m_reset();
-						} else {
-							if((touch_info->x) > 512) s2m_right = true;
-							else s2m_right = false;
-							s2m_finger = true;
-							s2m_tap_time_pre = ktime_to_ms(ktime_get());
-							s2m_y = touch_info->y;
-						}
-					}
-				}
-				if ((!state_down) && (s2m_finger)){ 
-					s2m_reset();
-				}
-				//printk( "ITUCH : <%d>(%s)[%d(%d):%d(%d)]-%u\n", finger, state_down ? "down" : "up", touch_info->x, touch_info->wx, touch_info->y, touch_info->wy, touch_info->count );
+	if (dt2w_switch > 0) {
+			dt2w_pressed = true;
+			if(((x) <100) || ((x)>900) 
+					|| ((y)<50) || ((y) >950)) {
+					/* Prevent sliding from screen edge */
+				doubletap2wake_reset();
+				dt2w_ok = false;
+			} else {
+				dt2w_get_x = x;
+				dt2w_get_y = y;
+				dt2w_ok = true;
 			}
-
-			if( state_up )
-				touch_info->count	= 0;
+	}
+	//s2w
+	if((s2w_switch > 0)) {
+		if(!s2w_finger) {
+			if(((y) < 950)) {
+				s2w_reset();
+			} else {
+				s2w_finger = true;
+				s2w_tap_time_pre = ktime_to_ms(ktime_get());
+				s2w_x = x;
+				s2w_scron = false;
+			}
 		}
 	}
-	//if (dt2w_debug) printk("ngxson: s2w x=%d y=%d\n", x, y);
-	if((!s2w_scron) && (s2w_finger)) {
-		if ((abs(x - s2w_x) < S2W_DELTA_X) && (y > 450) &&
-				((ktime_to_ms(ktime_get()) - s2w_tap_time_pre) < S2W_TIMEOUT_MAX) ) {
-			if (y < 750) {
-				s2w_scron = true;
-				doubletap2wake_pwrtrigger();
+	
+	//media control
+	if((s2m > 0)) {
+		if(!s2m_finger) {
+			if(((y) > 256)) {
+				s2m_reset();
+			} else if (((x) > 128) && ((x) < 896)) {
+				s2m_reset();
+			} else {
+				if((x) > 512) s2m_right = true;
+				else s2m_right = false;
+				s2m_finger = true;
+				s2m_tap_time_pre = ktime_to_ms(ktime_get());
+				s2m_y = y;
 			}
-		} else s2w_reset();
+		}
+	}
+	return;
+}
+
+static void inline nui_rmi4_proc_fngr_release(unsigned int x, unsigned int y)
+{
+	if (dt2w_switch > 0) {
+			dt2w_got_xy = true;
+			if (!dt2w_pressed) detect_doubletap2wake((x), (y));
+			else if (dt2w_ok) {
+				detect_doubletap2wake(dt2w_get_x, dt2w_get_y);
+				dt2w_ok = false;
+				dt2w_pressed = false;
+			}
+	}
+	//s2w
+	if (s2w_finger){ 
+		s2w_reset();
 	}
 	
-	if((s2m_finger)&&(scr_suspended)) s2m_detect(x,y);
+	//media control
+	if (s2m_finger){ 
+		s2m_reset();
+	}
+
+	return;
+}
+
+static void inline nui_rmi4_proc_fngr_move(unsigned int x, unsigned int y)
+{
+	if(s2w_finger) {
+		if(!s2w_scron) {
+			if ((abs(x - s2w_x) < S2W_DELTA_X) && (y > 450) &&
+					((ktime_to_ms(ktime_get()) - s2w_tap_time_pre) < S2W_TIMEOUT_MAX) ) {
+				if (y < 750) {
+					s2w_scron = true;
+					doubletap2wake_pwrtrigger();
+				}
+			} else s2w_reset();
+		}
+		
+		if(scr_suspended) s2m_detect(x,y);
+	}
 
 	return;
 }
@@ -789,9 +764,7 @@ exit:
 static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
-	unsigned char touch_count = 0;
 	unsigned char finger;
-	struct synaptics_rmi4_finger_state currentf;
 		
 	for (finger = 1; finger < 5; finger++) {
 		reg_index = finger / 4;
@@ -799,7 +772,6 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 		finger_status = (finger_status_reg[reg_index] >> finger_shift)
 				& MASK_2BIT;
 		if (finger_status) {
-			touch_count++;
 			break;
 		}
 	}
@@ -809,7 +781,6 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 		finger_shift = (finger % 4) * 2;
 		finger_status = (finger_status_reg[reg_index] >> finger_shift)
 				& MASK_2BIT;
-		currentf.status = finger_status;
 		if (finger_status) {
 			data_offset = data_addr +
 					2 +
@@ -822,11 +793,11 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 				return 0;
 			x = (data[0] << 4) | (data[2] & MASK_4BIT);
 			y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
-			currentf.x = x;
-			currentf.y = y;
-			touch_count++;
 		}
-		nui_rmi4_proc_fngr(rmi4_data, &currentf, finger, touch_count);
+		if(!prev_status && finger_status) nui_rmi4_proc_fngr_press(x, y);
+		else if(prev_status && finger_status) nui_rmi4_proc_fngr_move(x, y);
+		else if(prev_status && !finger_status) nui_rmi4_proc_fngr_release(x, y);
+		prev_status = finger_status;
 	} else {
 		doubletap2wake_reset();
 		s2w_reset();
@@ -953,25 +924,26 @@ static inline void synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi
 }
 
 static void hn_pressbtn(struct work_struct *hn_pressbtn_work) {
-	unsigned int code;
-	
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
 		
 	switch(hn_btn) {
 		case 0:
-			code = KEY_BACK;
+			btn_press(hn_one, true);
+			msleep(D2W_PWRKEY_DUR);
+			btn_press(hn_one, false);
 			break;
 		case 1:
-			code = KEY_HOMEPAGE;
+			btn_press(hn_two, true);
+			msleep(D2W_PWRKEY_DUR);
+			btn_press(hn_two, false);
 			break;
 		default:
-			code = 580;
-		}
-	vibrate(25);
-	btn_press(code, true);
-	msleep(D2W_PWRKEY_DUR);
-	btn_press(code, false);
+			btn_press(hn_thr, true);
+			msleep(D2W_PWRKEY_DUR);
+			btn_press(hn_thr, false);
+	}
+	vibrate(30);
 	mutex_unlock(&pwrkeyworklock);
 	return;
 }
@@ -1034,7 +1006,7 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 			if((y < 960) && (hn_detecting)) {
 				if(((ktime_to_ms(ktime_get()) - hn_time) > 12) &&
 					((ktime_to_ms(ktime_get()) - hn_time) < 250)) //check time 12<t<200 (ms)
-					schedule_work(&hn_pressbtn_work);
+				schedule_work(&hn_pressbtn_work);
 				hn_detecting = false;
 			}
 			rmi4_data->finger_state[finger].x = x;
@@ -1114,6 +1086,9 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
 	unsigned char finger;
 
+	prev_status = 0;
+	prev_x = 0;
+	prev_y = 0;
 	for (finger = 0; finger < 5; finger++) {
 		input_mt_slot(rmi4_data->input_dev, finger);
 		input_mt_report_slot_state(rmi4_data->input_dev,
@@ -1185,11 +1160,10 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 				}
 				msleep(12);
 			}
+			break;
 			
 		default:
 			synaptics_rmi4_f11_abs_report_hn(rmi4_data);
-			break;
-		
 
 	}
 	
@@ -1213,6 +1187,13 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 	unsigned char intr_status;
 	int irq_flags;
 
+	if(scr_suspended) {
+		work_mode = 1;
+	} else {
+		if(hn_enable) work_mode = 2;
+		else work_mode = 0;
+	}
+	
 	if (enable) {
 		if (rmi4_data->irq_enabled)
 			return retval;
@@ -1226,13 +1207,6 @@ static int synaptics_rmi4_irq_enable(struct synaptics_rmi4_data *rmi4_data,
 			return retval;
 
 		irq_flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT | IRQF_NO_SUSPEND | IRQF_EARLY_RESUME;	
-		
-		if(scr_suspended) {
-			work_mode = 1;
-		} else {
-			if(hn_enable) work_mode = 2;
-			else work_mode = 0;
-		}
 
 		printk("ngxson: synaptics enable irq\n");
 		
