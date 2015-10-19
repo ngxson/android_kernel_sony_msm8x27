@@ -72,6 +72,11 @@
 
 #define SITAR_MUX_SWITCH_READY_WAIT_MS 50
 
+int nui_TX1 = 0;
+int nui_RX1 = 0;
+int nui_RX2 = 0;
+int nui_ADC = 0;
+
 struct sitar_codec_dai_data {
 	u32 rate;
 	u32 *ch_num;
@@ -2999,13 +3004,90 @@ static int sitar_volatile(struct snd_soc_codec *ssc, unsigned int reg)
 	return 0;
 }
 
+static void nui_save_sitar(unsigned int reg, unsigned int value) {
+	switch(reg) {
+		case SITAR_A_CDC_TX1_VOL_CTL_GAIN:
+			//printk("ngxson sitar write %d %d\n", reg, value);
+			if(!nui_TX1)
+				nui_TX1 = value;
+			break;
+			
+		case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
+			//printk("ngxson sitar write %d %d\n", reg, value);
+			if(!nui_RX1)
+				nui_RX1 = value;
+			break;
+		
+		case SITAR_A_CDC_RX2_VOL_CTL_B2_CTL:
+			//printk("ngxson sitar write %d %d\n", reg, value);
+			if(!nui_RX2)
+				nui_RX2 = value;
+			break;
+		case SITAR_A_TX_1_2_EN:
+			if(!nui_ADC)
+				nui_ADC = value;
+			break;
+		}
+	return;
+}
+
+static int nui_restore_sitar(unsigned int reg, unsigned int value) {
+	switch(reg) {
+		case SITAR_A_CDC_TX1_VOL_CTL_GAIN:
+			if(nui_TX1 != 0)
+				return nui_TX1;
+			else return value;
+			break;
+			
+		case SITAR_A_CDC_TX2_VOL_CTL_GAIN:
+			if(nui_TX1 != 0)
+				return nui_TX1;
+			else return value;
+			break;
+			
+		case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
+			if(nui_RX1 != 0)
+				return nui_RX1;
+			else return value;
+			break;
+		
+		case SITAR_A_CDC_RX2_VOL_CTL_B2_CTL:
+			if(nui_RX2 != 0)
+				return nui_RX2;
+			else return value;
+			break;
+			
+		case SITAR_A_CDC_RX3_VOL_CTL_B2_CTL:
+			if(nui_RX2 != 0)
+				return nui_RX2;
+			else return value;
+			break;
+			
+		case SITAR_A_TX_1_2_EN:
+			if(nui_ADC != 0)
+				return nui_ADC;
+			else return value;
+			break;
+			
+		case SITAR_A_TX_3_EN:
+			if(nui_ADC != 0)
+				return nui_ADC;
+			else return value;
+			break;
+			
+		default:
+			return value;
+		}
+}
+
 #define SITAR_FORMATS (SNDRV_PCM_FMTBIT_S16_LE)
 int sitar_write(struct snd_soc_codec *codec, unsigned int reg,
 	unsigned int value)
 {
 	int ret;
 
-	printk("ngxson sitar write %d %d\n", reg, value);
+	//printk("ngxson sitar write %d %d\n", reg, value);
+	nui_save_sitar(reg, value);
 
 	BUG_ON(reg > SITAR_MAX_REGISTER);
 
@@ -3031,16 +3113,16 @@ unsigned int sitar_read(struct snd_soc_codec *codec,
 		reg < codec->driver->reg_cache_size) {
 		ret = snd_soc_cache_read(codec, reg, &val);
 		if (ret >= 0) {
-			printk("ngxson sitar read %d %d\n", reg, val);
-			return val;
+			//printk("ngxson sitar read %d %d\n", reg, val);
+			return nui_restore_sitar(reg, val);
 		} else
 			dev_err(codec->dev, "Cache read from %x failed: %d\n",
 				reg, ret);
 	}
 
 	val = wcd9xxx_reg_read(codec->control_data, reg);
-	printk("ngxson sitar read %d %d\n", reg, val);
-	return val;
+	//printk("ngxson sitar read %d %d\n", reg, val);
+	return nui_restore_sitar(reg, val);
 }
 EXPORT_SYMBOL(sitar_read);
 

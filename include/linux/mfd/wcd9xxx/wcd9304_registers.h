@@ -13,6 +13,11 @@
 #ifndef SITAR_CODEC_DIGITAL_H
 #define SITAR_CODEC_DIGITAL_H
 
+extern int nui_TX1;
+extern int nui_RX1;
+extern int nui_RX2;
+extern int nui_ADC;
+
 #define SITAR_A_PIN_CTL_OE0			(0x10)
 #define SITAR_A_PIN_CTL_OE0__POR			(0x00000000)
 #define SITAR_A_PIN_CTL_OE1			(0x11)

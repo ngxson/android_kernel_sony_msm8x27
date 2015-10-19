@@ -30,12 +30,31 @@ unsigned int sitar_read(struct snd_soc_codec *codec, unsigned int reg);
 int sitar_write(struct snd_soc_codec *codec, unsigned int reg,
 		unsigned int value);
 
+static ssize_t mic_analog_gain_show(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u",nui_ADC);
+}
+
+static ssize_t mic_analog_gain_store(struct kobject *kobj,
+		struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int lval;
+
+	sscanf(buf, "%u", &lval);
+		sitar_write(fauxsound_codec_ptr,
+			SITAR_A_TX_1_2_EN, lval);
+		sitar_write(fauxsound_codec_ptr,
+			SITAR_A_TX_3_EN, lval);
+	nui_ADC = lval;
+	return count;
+
+}
+
 static ssize_t mic_gain_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u",
-		sitar_read(fauxsound_codec_ptr,
-			SITAR_A_CDC_TX1_VOL_CTL_GAIN));
+	return sprintf(buf, "%u",nui_TX1);
 }
 
 static ssize_t mic_gain_store(struct kobject *kobj,
@@ -48,6 +67,7 @@ static ssize_t mic_gain_store(struct kobject *kobj,
 			SITAR_A_CDC_TX1_VOL_CTL_GAIN, lval);
 		sitar_write(fauxsound_codec_ptr,
 			SITAR_A_CDC_TX2_VOL_CTL_GAIN, lval);
+	nui_TX1 = lval;
 	return count;
 
 }
@@ -55,9 +75,7 @@ static ssize_t mic_gain_store(struct kobject *kobj,
 static ssize_t speaker_gain_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
-        return sprintf(buf, "%u",
-			sitar_read(fauxsound_codec_ptr,
-				SITAR_A_CDC_RX1_VOL_CTL_B2_CTL));
+	return sprintf(buf, "%u",nui_RX1);
 
 }
 
@@ -69,15 +87,14 @@ static ssize_t speaker_gain_store(struct kobject *kobj,
 	sscanf(buf, "%u", &lval);
 		sitar_write(fauxsound_codec_ptr,
 			SITAR_A_CDC_RX1_VOL_CTL_B2_CTL, lval);
+	nui_RX1 = lval;
 	return count;
 }
 
 static ssize_t headphone_gain_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u",
-			sitar_read(fauxsound_codec_ptr,
-				SITAR_A_CDC_RX2_VOL_CTL_B2_CTL));
+	return sprintf(buf, "%u",nui_RX2);
 }
 
 static ssize_t headphone_gain_store(struct kobject *kobj,
@@ -90,6 +107,7 @@ static ssize_t headphone_gain_store(struct kobject *kobj,
 			SITAR_A_CDC_RX2_VOL_CTL_B2_CTL, lval);
 		sitar_write(fauxsound_codec_ptr,
 			SITAR_A_CDC_RX3_VOL_CTL_B2_CTL, lval);
+	nui_RX2 = lval;
 	return count;
 }
 
@@ -99,6 +117,12 @@ static ssize_t sound_control_version_show(struct kobject *kobj, struct kobj_attr
 			SOUND_CONTROL_MAJOR_VERSION,
 			SOUND_CONTROL_MINOR_VERSION);
 }
+
+static struct kobj_attribute mic_analog_gain_attribute =
+	__ATTR(gpl_mic_analog_gain,
+		0666,
+		mic_analog_gain_show,
+		mic_analog_gain_store);
 
 static struct kobj_attribute mic_gain_attribute =
 	__ATTR(gpl_mic_gain,
@@ -125,6 +149,7 @@ static struct kobj_attribute sound_control_version_attribute =
 
 static struct attribute *sound_control_attrs[] =
 	{
+		&mic_analog_gain_attribute.attr,
 		&mic_gain_attribute.attr,
 		&speaker_gain_attribute.attr,
 		&headphone_gain_attribute.attr,
