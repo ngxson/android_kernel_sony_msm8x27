@@ -3000,10 +3000,12 @@ static int sitar_volatile(struct snd_soc_codec *ssc, unsigned int reg)
 }
 
 #define SITAR_FORMATS (SNDRV_PCM_FMTBIT_S16_LE)
-static int sitar_write(struct snd_soc_codec *codec, unsigned int reg,
+int sitar_write(struct snd_soc_codec *codec, unsigned int reg,
 	unsigned int value)
 {
 	int ret;
+
+	printk("ngxson sitar write %d %d\n", reg, value);
 
 	BUG_ON(reg > SITAR_MAX_REGISTER);
 
@@ -3013,10 +3015,11 @@ static int sitar_write(struct snd_soc_codec *codec, unsigned int reg,
 			dev_err(codec->dev, "Cache write to %x failed: %d\n",
 				reg, ret);
 	}
-
 	return wcd9xxx_reg_write(codec->control_data, reg, value);
 }
-static unsigned int sitar_read(struct snd_soc_codec *codec,
+EXPORT_SYMBOL(sitar_write);
+
+unsigned int sitar_read(struct snd_soc_codec *codec,
 				unsigned int reg)
 {
 	unsigned int val;
@@ -3028,6 +3031,7 @@ static unsigned int sitar_read(struct snd_soc_codec *codec,
 		reg < codec->driver->reg_cache_size) {
 		ret = snd_soc_cache_read(codec, reg, &val);
 		if (ret >= 0) {
+			printk("ngxson sitar read %d %d\n", reg, val);
 			return val;
 		} else
 			dev_err(codec->dev, "Cache read from %x failed: %d\n",
@@ -3035,8 +3039,10 @@ static unsigned int sitar_read(struct snd_soc_codec *codec,
 	}
 
 	val = wcd9xxx_reg_read(codec->control_data, reg);
+	printk("ngxson sitar read %d %d\n", reg, val);
 	return val;
 }
+EXPORT_SYMBOL(sitar_read);
 
 static void sitar_codec_enable_audio_mode_bandgap(struct snd_soc_codec *codec)
 {
@@ -6092,6 +6098,9 @@ static void sitar_codec_init_reg(struct snd_soc_codec *codec)
 			sitar_codec_reg_init_val[i].val);
 }
 
+struct snd_soc_codec *fauxsound_codec_ptr;
+EXPORT_SYMBOL(fauxsound_codec_ptr);
+
 static int sitar_codec_probe(struct snd_soc_codec *codec)
 {
 	struct sitar *control;
@@ -6101,6 +6110,9 @@ static int sitar_codec_probe(struct snd_soc_codec *codec)
 	int i;
 	u8 sitar_version;
 	int ch_cnt;
+	
+	printk("sitar codec probe...\n");
+	fauxsound_codec_ptr = codec;
 
 	codec->control_data = dev_get_drvdata(codec->dev->parent);
 	control = codec->control_data;
