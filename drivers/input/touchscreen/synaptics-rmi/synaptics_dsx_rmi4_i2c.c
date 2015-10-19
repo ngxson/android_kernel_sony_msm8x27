@@ -140,6 +140,7 @@ static unsigned char intr_f11_irq[MAX_INTR_REGISTERS];
 static unsigned int hn_one = KEY_BACK;
 static unsigned int hn_two = KEY_HOMEPAGE;
 static unsigned int hn_thr = 580;
+static unsigned int hn_menu = 1;
 //static bool nui_enabled_irq = false;
 //end
 
@@ -938,10 +939,15 @@ static void hn_pressbtn(struct work_struct *hn_pressbtn_work) {
 			msleep(D2W_PWRKEY_DUR);
 			btn_press(hn_two, false);
 			break;
-		default:
+		case 2:
 			btn_press(hn_thr, true);
 			msleep(D2W_PWRKEY_DUR);
 			btn_press(hn_thr, false);
+			break;
+		default:
+			btn_press(KEY_MENU, true);
+			msleep(D2W_PWRKEY_DUR);
+			btn_press(KEY_MENU, false);
 	}
 	vibrate(30);
 	mutex_unlock(&pwrkeyworklock);
@@ -1049,8 +1055,9 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 			hn_detecting = true;
 			if(x < 341) { //back btn
 				hn_btn = 0;
-			} else if (x > 683) { //recent btn
-				hn_btn = 2;
+			} else if (x > 683) {
+				if((x > 992) && hn_menu) hn_btn = 3; //menu btn
+				else hn_btn = 2; //recent btn
 			} else { //home btn
 				hn_btn = 1;
 			}
@@ -2282,6 +2289,7 @@ static void __exit synaptics_rmi4_exit(void)
 module_param(hn_one, int, 0644);
 module_param(hn_two, int, 0644);
 module_param(hn_thr, int, 0644);
+module_param(hn_menu, int, 0644);
 
 module_init(synaptics_rmi4_init);
 module_exit(synaptics_rmi4_exit);
