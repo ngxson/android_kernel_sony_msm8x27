@@ -38,6 +38,7 @@ int brlock = 0;
 int nui_which_vol = 0;
 bool focus2torch = false;
 bool hn_enable = false;
+bool cam_gain = false;
 
 /*
  * SYSFS stuff below here
@@ -568,6 +569,62 @@ static ssize_t hn_enable_dump(struct device *dev,
 }
 static DEVICE_ATTR(hn_enable, (S_IWUGO|S_IRUGO),
 	hn_enable_show, hn_enable_dump);
+	
+// camera exposure gain
+static ssize_t cam_gain_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", cam_gain);
+}
+
+static ssize_t cam_gain_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	if(val == 1) {
+			cam_gain = true;
+		} else if (val == 0) {
+			cam_gain = false;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+static DEVICE_ATTR(cam_gain, (S_IWUGO|S_IRUGO),
+	cam_gain_show, cam_gain_dump);
+	
+// force 30fps video recording
+static ssize_t cam_rec_30fps_show(struct device *dev,
+				    struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", cam_rec_30fps);
+}
+
+static ssize_t cam_rec_30fps_dump(struct device *dev,
+				     struct device_attribute *attr,
+				     const char *buf, size_t count)
+{
+
+	int val;
+	int rc;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) return -EINVAL;
+	if(val == 1) {
+			cam_rec_30fps = true;
+		} else if (val == 0) {
+			cam_rec_30fps = false;
+		} else return -EINVAL;
+
+	return strnlen(buf, count);
+}
+static DEVICE_ATTR(cam_rec_30fps, (S_IWUGO|S_IRUGO),
+	cam_rec_30fps_show, cam_rec_30fps_dump);
 
 /*
  * INIT / EXIT stuff below here
@@ -603,6 +660,8 @@ static int __init nuisetting_init(void)
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_which_vol.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus2torch.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_hn_enable.attr);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_cam_gain.attr);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_cam_rec_30fps.attr);
 
 	return 0;
 }

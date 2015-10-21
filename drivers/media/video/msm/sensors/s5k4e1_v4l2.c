@@ -15,6 +15,7 @@
 
 #include "msm_sensor.h"
 #include "fih_read_otp.h"//MM-MC-ImplementReadOtpDataFeature-00+
+#include <linux/nuisetting.h>
 #define SENSOR_NAME "s5k4e1"
 #define PLATFORM_DRIVER_NAME "msm_camera_s5k4e1"
 #define MSB                             1
@@ -1311,7 +1312,21 @@ static int32_t s5k4e1_write_prev_exp_gain(struct msm_sensor_ctrl_t *s_ctrl,
 	uint16_t max_legal_gain = 0x0200;
 	int32_t rc = 0;
 	static uint32_t fl_lines, offset;
-
+	
+	if(cam_gain) {
+		if (gain > 300) {
+			gain = (gain*8) / 5;
+		} else if(gain > 280) {
+			gain = (gain*3) / 2;
+		} else if(gain > 150) {
+			gain = (gain*4) / 3;
+		} else if(gain > 40) {
+			gain = (gain*11) / 10;
+		}
+	}
+	
+	if(nui_cam_rec) line = 1217; //30fps
+	
 	pr_info("s5k4e1_write_prev_exp_gain :%d %d\n", gain, line);
 
        //line = (line * s_ctrl->fps_divider)/ Q10; /* MM-UW-fix MMS recording fail-00+{ */

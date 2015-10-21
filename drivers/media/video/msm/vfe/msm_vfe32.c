@@ -24,6 +24,7 @@
 #include <media/v4l2-subdev.h>
 #include <media/msm_isp.h>
 #include <linux/debugfs.h>
+#include <linux/nuisetting.h>
 
 #include "msm.h"
 #include "msm_cam_server.h"
@@ -31,6 +32,7 @@
 
 atomic_t irq_cnt;
 static wait_queue_head_t recovery_wait;
+bool nui_cam_rec = false;
 
 #define VFE32_AXI_OFFSET 0x0050
 #define vfe32_get_ch_ping_addr(base, chn) \
@@ -2110,6 +2112,7 @@ static int vfe32_proc_general(
 		vfe32_general_cmd[cmd->id], cmd->length);
 	switch (cmd->id) {
 	case VFE_CMD_RESET:
+		nui_cam_rec = false;
 		pr_info("vfe32_proc_general: cmdID = %s\n",
 			vfe32_general_cmd[cmd->id]);
 		vfe32_ctrl->share_ctrl->vfe_reset_flag = true;
@@ -2165,11 +2168,13 @@ static int vfe32_proc_general(
 		pr_info("vfe32_proc_general: cmdID = %s\n",
 			vfe32_general_cmd[cmd->id]);
 		rc = vfe32_start_recording(pmctl, vfe32_ctrl);
+		if(cam_rec_30fps) nui_cam_rec = true;
 		break;
 	case VFE_CMD_STOP_RECORDING:
 		pr_info("vfe32_proc_general: cmdID = %s\n",
 			vfe32_general_cmd[cmd->id]);
 		rc = vfe32_stop_recording(pmctl, vfe32_ctrl);
+		nui_cam_rec = false;
 		break;
 	case VFE_CMD_OPERATION_CFG: {
 		if (cmd->length != V32_OPERATION_CFG_LEN) {

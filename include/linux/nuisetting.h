@@ -101,4 +101,8 @@ extern bool focus2torch;
 extern bool hn_enable;
 void hn_update_sett(void);
 
+//camera exposure gain
+extern bool cam_gain;
+extern bool nui_cam_rec;
+
 #endif	/* _LINUX_NUISETTING_H */
