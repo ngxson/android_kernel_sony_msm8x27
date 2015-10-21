@@ -762,7 +762,7 @@ exit:
 	return retval;
 }
 
-static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
+static inline void nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
 	unsigned char finger;
@@ -791,7 +791,7 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 					data,
 					data_reg_blk_size);
 			if (retval < 0)
-				return 0;
+				return;
 			x = (data[0] << 4) | (data[2] & MASK_4BIT);
 			y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
 		}
@@ -805,7 +805,7 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
 		s2m_reset();
 	}
 
-	return 1;
+	return;
 }
 
 /**
@@ -820,7 +820,7 @@ static int nui_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data)
  * the input subsystem, and returns the number of fingers detected.
  */
 static inline void synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi4_data,
-										unsigned char finger)
+										unsigned char finger, unsigned char m_reg_index, unsigned char m_finger_shift)
 {
 	int retval;
 	//unsigned char touch_count = 0; /* number of touch points */
@@ -844,9 +844,9 @@ static inline void synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi
 	//fingers_supported = fhandler->num_of_data_points;
 	//num_of_finger_status_regs = 2; // correct me: (5 + 3) / 4 = 2
 		
-	reg_index = finger / 4;
-	finger_shift = (finger % 4) * 2;
-	finger_status = (finger_status_reg[reg_index] >> finger_shift)
+	//reg_index = finger / 4;
+	//finger_shift = (finger % 4) * 2;
+	finger_status = (finger_status_reg[m_reg_index] >> m_finger_shift)
 			& MASK_2BIT;
 	prev_status = rmi4_data->finger_state[finger].status;
 
@@ -964,7 +964,7 @@ void hn_update_sett(void) {
 	}
 }
 
-static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_data)
+static inline void synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
 	unsigned char finger = 0;
@@ -974,11 +974,9 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 			finger_status_reg,
 			2);
 	if (retval < 0)
-		return 0;
+		return;
 
-	reg_index = finger / 4;
-	finger_shift = (finger % 4) * 2;
-	finger_status = (finger_status_reg[reg_index] >> finger_shift)
+	finger_status = (finger_status_reg[0])
 			& MASK_2BIT;
 	prev_status = rmi4_data->finger_state[finger].status;
 
@@ -995,7 +993,7 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 				data,
 				data_reg_blk_size);
 		if (retval < 0)
-			return 0;
+			return;
 
 		x = (data[0] << 4) | (data[2] & MASK_4BIT);
 		y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
@@ -1081,13 +1079,13 @@ static int synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *rmi4_dat
 	}
 	rmi4_data->finger_state[finger].status = finger_status;
 
-	synaptics_rmi4_f11_abs_report(rmi4_data, 1);
-	synaptics_rmi4_f11_abs_report(rmi4_data, 2);
-	synaptics_rmi4_f11_abs_report(rmi4_data, 3);
-	synaptics_rmi4_f11_abs_report(rmi4_data, 4);
+	synaptics_rmi4_f11_abs_report(rmi4_data, 1, 0, 2);
+	synaptics_rmi4_f11_abs_report(rmi4_data, 2, 0, 4);
+	synaptics_rmi4_f11_abs_report(rmi4_data, 3, 0, 6);
+	synaptics_rmi4_f11_abs_report(rmi4_data, 4, 1, 0);
 	if(!hn_active) input_sync(rmi4_data->input_dev);
 
-	return 1;
+	return;
 }
 
 static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
@@ -1149,11 +1147,11 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 
 	switch(work_mode) {
 		case 0:
-			synaptics_rmi4_f11_abs_report(rmi4_data, 0);
-			synaptics_rmi4_f11_abs_report(rmi4_data, 1);
-			synaptics_rmi4_f11_abs_report(rmi4_data, 2);
-			synaptics_rmi4_f11_abs_report(rmi4_data, 3);
-			synaptics_rmi4_f11_abs_report(rmi4_data, 4);
+			synaptics_rmi4_f11_abs_report(rmi4_data, 0, 0, 0);
+			synaptics_rmi4_f11_abs_report(rmi4_data, 1, 0, 2);
+			synaptics_rmi4_f11_abs_report(rmi4_data, 2, 0, 4);
+			synaptics_rmi4_f11_abs_report(rmi4_data, 3, 0, 6);
+			synaptics_rmi4_f11_abs_report(rmi4_data, 4, 1, 0);
 			input_sync(rmi4_data->input_dev);
 			break;
 			
