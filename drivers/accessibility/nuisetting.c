@@ -39,6 +39,7 @@ int nui_which_vol = 0;
 bool focus2torch = false;
 bool hn_enable = false;
 bool cam_gain = false;
+bool cam_rec_30fps = false;
 
 /*
  * SYSFS stuff below here

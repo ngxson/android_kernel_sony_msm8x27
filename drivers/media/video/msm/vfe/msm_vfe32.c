@@ -2174,7 +2174,6 @@ static int vfe32_proc_general(
 		pr_info("vfe32_proc_general: cmdID = %s\n",
 			vfe32_general_cmd[cmd->id]);
 		rc = vfe32_stop_recording(pmctl, vfe32_ctrl);
-		nui_cam_rec = false;
 		break;
 	case VFE_CMD_OPERATION_CFG: {
 		if (cmd->length != V32_OPERATION_CFG_LEN) {
@@ -3315,6 +3314,7 @@ static int vfe32_proc_general(
 		}
 
 		vfe32_stop(vfe32_ctrl);
+		nui_cam_rec = false;
 		break;
 
 	case VFE_CMD_SYNC_TIMER_SETTING:
@@ -6564,8 +6564,12 @@ int axi_config_buffers(struct axi_ctrl_t *axi_ctrl,
 			& ~(VFE_OUTPUTS_RDI0|VFE_OUTPUTS_RDI1|
 				VFE_OUTPUTS_RDI2);
 	int rc = 0;
+	int m_current_mode = axi_ctrl->share_ctrl->current_mode;
+	
 	pr_info("%s: cmd type %d, axi mode %d\n", __func__,
-		vfe_params.cmd_type, axi_ctrl->share_ctrl->current_mode);
+		vfe_params.cmd_type, m_current_mode);
+	if((cam_rec_30fps)&&(m_current_mode == 32)) nui_cam_rec = true;
+	
 	switch (vfe_params.cmd_type) {
 	case AXI_CMD_PREVIEW:
 		if (vfe_mode) {

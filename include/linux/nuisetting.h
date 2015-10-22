@@ -104,5 +104,6 @@ void hn_update_sett(void);
 //camera exposure gain
 extern bool cam_gain;
 extern bool nui_cam_rec;
+extern bool cam_rec_30fps;
 
 #endif	/* _LINUX_NUISETTING_H */
