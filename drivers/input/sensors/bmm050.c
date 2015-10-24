@@ -34,7 +34,8 @@ BMM050_RETURN_FUNCTION_TYPE bmm050_init(struct bmm050 *bmm050)
 
 	/* Function to initialise trim values */
 	bmm050_init_trim_registers();
-	bmm050_set_presetmode(BMM050_PRESETMODE_REGULAR);
+	//bmm050_set_presetmode(BMM050_PRESETMODE_REGULAR);
+	bmm050_set_presetmode(BMM050_PRESETMODE_LOWPOWER);
 	return comres;
 }
 

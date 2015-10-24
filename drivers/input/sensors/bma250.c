@@ -336,19 +336,19 @@ static void inline bma250_read_accel_xyz(struct bma250_data *bma250)
     }
 
     memset(raw, 0 , sizeof(raw));
-    i = (sizeof(short)*8-(BMA250_ACC_LSB_LEN+BMA250_ACC_MSB_LEN));
+    //i = (sizeof(short)*8-(BMA250_ACC_LSB_LEN+BMA250_ACC_MSB_LEN));
     //raw[0] = ((buf[i*2] >> BMA250_ACC_LSB_POS) | (buf[i*2+1] << BMA250_ACC_LSB_LEN));
     raw[0] = ((buf[0] >> BMA250_ACC_LSB_POS) | (buf[1] << BMA250_ACC_LSB_LEN));
     /* Handle a negative number */
-    raw[0] = raw[0] << i;
-    raw[0] = raw[0] >> i;
+    raw[0] = raw[0] << 6;
+    raw[0] = raw[0] >> 6;
     
     raw[1] = ((buf[2] >> BMA250_ACC_LSB_POS) | (buf[3] << BMA250_ACC_LSB_LEN));
-    raw[1] = raw[1] << i;
-    raw[1] = raw[1] >> i;
+    raw[1] = raw[1] << 6;
+    raw[1] = raw[1] >> 6;
     raw[2] = ((buf[4] >> BMA250_ACC_LSB_POS) | (buf[5] << BMA250_ACC_LSB_LEN));
-    raw[2] = raw[2] << i;
-    raw[2] = raw[2] >> i;
+    raw[2] = raw[2] << 6;
+    raw[2] = raw[2] >> 6;
     memset(data, 0 , sizeof(data));
     for (i=0; i<3; i++)
     {

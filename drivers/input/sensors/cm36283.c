@@ -1823,7 +1823,7 @@ static int control_and_report( struct cm36283_info *lpi, uint8_t mode, uint16_t 
                 		default:
                 		break;*/
             };
-            D("[LS][CM3628] %s: val =%d, \n",__func__,val);
+            //D("[LS][CM3628] %s: val =%d, \n",__func__,val);
             input_report_abs(lpi->ps_input_dev, ABS_DISTANCE, val);      
             input_sync(lpi->ps_input_dev);        
         }

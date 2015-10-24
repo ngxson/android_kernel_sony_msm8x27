@@ -928,8 +928,8 @@ static ssize_t bmm_store_delay(struct device *dev,
 		return err;
 	}
 
-	if (data < BMM_DELAY_MIN)
-		data = BMM_DELAY_MIN;
+	//if (data < BMM_DELAY_MIN)
+		data = BMM_DELAY_DEFAULT;
 
 	atomic_set(&client_data->delay, data);
 
