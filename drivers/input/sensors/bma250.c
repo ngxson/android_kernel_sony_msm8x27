@@ -323,7 +323,7 @@ static int bma250_power_init(struct bma250_data *bma250)
 }
 /*MTD-PERIPHERAL-AC-VREG_CONTROL-00+}*/
 
-static void bma250_read_accel_xyz(struct bma250_data *bma250)
+static void inline bma250_read_accel_xyz(struct bma250_data *bma250)
 {
     unsigned char buf[6];
     s16 raw[3], data[3];
@@ -336,13 +336,19 @@ static void bma250_read_accel_xyz(struct bma250_data *bma250)
     }
 
     memset(raw, 0 , sizeof(raw));
-    for(i=0; i<3; i++)
-    {
-        raw[i] = ((buf[i*2] >> BMA250_ACC_LSB_POS) | (buf[i*2+1] << BMA250_ACC_LSB_LEN));
-        /* Handle a negative number */
-        raw[i] = raw[i] << (sizeof(short)*8-(BMA250_ACC_LSB_LEN+BMA250_ACC_MSB_LEN));
-        raw[i] = raw[i] >> (sizeof(short)*8-(BMA250_ACC_LSB_LEN+BMA250_ACC_MSB_LEN));
-    }
+    i = (sizeof(short)*8-(BMA250_ACC_LSB_LEN+BMA250_ACC_MSB_LEN));
+    //raw[0] = ((buf[i*2] >> BMA250_ACC_LSB_POS) | (buf[i*2+1] << BMA250_ACC_LSB_LEN));
+    raw[0] = ((buf[0] >> BMA250_ACC_LSB_POS) | (buf[1] << BMA250_ACC_LSB_LEN));
+    /* Handle a negative number */
+    raw[0] = raw[0] << i;
+    raw[0] = raw[0] >> i;
+    
+    raw[1] = ((buf[2] >> BMA250_ACC_LSB_POS) | (buf[3] << BMA250_ACC_LSB_LEN));
+    raw[1] = raw[1] << i;
+    raw[1] = raw[1] >> i;
+    raw[2] = ((buf[4] >> BMA250_ACC_LSB_POS) | (buf[5] << BMA250_ACC_LSB_LEN));
+    raw[2] = raw[2] << i;
+    raw[2] = raw[2] >> i;
     memset(data, 0 , sizeof(data));
     for (i=0; i<3; i++)
     {
@@ -633,12 +639,6 @@ static void bma250_irq_work(struct work_struct *work)
     if (bma250->enable)
     {
         bma250_read_accel_xyz(bma250);
-
-        if (bma250->polling_times == 0 || (bma250->polling_times >= (bma250->polling_count-1)))
-            GSENSOR_DEBUG(LEVEL1, "%d) x = %3d, y = %3d, z = %3d", bma250->polling_times,\
-                                                                                                          bma250->value.x,\
-                                                                                                          bma250->value.y,\
-                                                                                                          bma250->value.z);
         if (abs(bma250->value.x) > bma250->gaxi.x||\
             abs(bma250->value.y) > bma250->gaxi.y||\
             abs(bma250->value.z) > bma250->gaxi.z)
