@@ -76,6 +76,7 @@ int nui_TX1 = 0;
 int nui_RX1 = 0;
 int nui_RX2 = 0;
 int nui_ADC = 0;
+static bool nui_SPK = true;
 
 struct sitar_codec_dai_data {
 	u32 rate;
@@ -3014,7 +3015,7 @@ static void nui_save_sitar(unsigned int reg, unsigned int value) {
 			
 		case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
 			//printk("ngxson sitar write %d %d\n", reg, value);
-			if(!nui_RX1)
+			if((!nui_RX1) && (nui_SPK))
 				nui_RX1 = value;
 			break;
 		
@@ -3023,6 +3024,16 @@ static void nui_save_sitar(unsigned int reg, unsigned int value) {
 			if(!nui_RX2)
 				nui_RX2 = value;
 			break;
+			
+		case SITAR_A_RX_EAR_EN:
+			if(value) {
+				//printk("ngxson EAR enable\n");
+				nui_SPK = false;
+			} else {
+				//printk("ngxson EAR disable\n");
+				nui_SPK = true;
+			}
+			
 		case SITAR_A_TX_1_2_EN:
 			if(!nui_ADC)
 				nui_ADC = value;
@@ -3046,7 +3057,7 @@ static int nui_restore_sitar(unsigned int reg, unsigned int value) {
 			break;
 			
 		case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
-			if(nui_RX1 != 0)
+			if((nui_RX1 != 0) && nui_SPK)
 				return nui_RX1;
 			else return value;
 			break;
