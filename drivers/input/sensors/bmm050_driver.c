@@ -55,8 +55,8 @@
 #define BMM_MAX_RETRY_WAKEUP (5)
 #define BMM_MAX_RETRY_WAIT_DRDY (100)
 
-#define BMM_DELAY_MIN (1)
-#define BMM_DELAY_DEFAULT (200)
+#define BMM_DELAY_MIN (500)
+#define BMM_DELAY_DEFAULT (500)
 
 #define MAG_VALUE_MAX (32767)
 #define MAG_VALUE_MIN (-32768)

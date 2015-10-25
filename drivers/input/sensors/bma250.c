@@ -169,6 +169,8 @@
 #define BMA250_ACC_Z_MSB__MSK           0xFF
 #define BMA250_ACC_Z_MSB__REG           BMA250_Z_AXIS_MSB_REG
 
+static bool nui_report = true;
+
 struct bma250acc {
     s16 x,
         y,
@@ -636,18 +638,21 @@ static void bma250_irq_work(struct work_struct *work)
 {
     struct bma250_data *bma250 = container_of((struct delayed_work *)work, struct bma250_data, irq_work);
 
-    if (bma250->enable)
-    {
-        bma250_read_accel_xyz(bma250);
-        if (abs(bma250->value.x) > bma250->gaxi.x||\
-            abs(bma250->value.y) > bma250->gaxi.y||\
-            abs(bma250->value.z) > bma250->gaxi.z)
-            bma250->polling_times = 0;
-
-        bma250->polling_times++;
-        if (bma250->polling_times < bma250->polling_count)
-            schedule_delayed_work(&bma250->irq_work, msecs_to_jiffies(bma250->pdelay));
-    }
+	if(nui_report) { //decrease report rate
+		if (bma250->enable)
+		{
+			bma250_read_accel_xyz(bma250);
+			if (abs(bma250->value.x) > bma250->gaxi.x||\
+				abs(bma250->value.y) > bma250->gaxi.y||\
+				abs(bma250->value.z) > bma250->gaxi.z)
+				bma250->polling_times = 0;
+		
+			bma250->polling_times++;
+			if (bma250->polling_times < bma250->polling_count)
+				schedule_delayed_work(&bma250->irq_work, msecs_to_jiffies(bma250->pdelay));
+		}
+	}
+	nui_report = !nui_report;
 }
 
 static irqreturn_t bma250_irq_handler(int irq, void *dev_id)
