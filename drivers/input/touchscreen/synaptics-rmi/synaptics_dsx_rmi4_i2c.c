@@ -1127,26 +1127,23 @@ static void reset_all_touch(struct synaptics_rmi4_data *rmi4_data) {
  * and the reporting of finger data when the presence of fingers
  * is detected.
  */
+ 
 static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 {
 	//unsigned char touch_count = 0;
 	unsigned int i;
 	struct synaptics_rmi4_data *rmi4_data = data;
-	int retval;
-	
-	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			rmi4_data->f01_data_base_addr + 1,
-			intr_f11_irq,
-			rmi4_data->num_of_intr_regs);
-	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			data_addr,
-			finger_status_reg,
-			2);
-	if (retval < 0)
-		return IRQ_HANDLED;
 
 	switch(work_mode) {
 		case 0:
+			synaptics_rmi4_i2c_read(rmi4_data,
+				rmi4_data->f01_data_base_addr + 1,
+				intr_f11_irq,
+				rmi4_data->num_of_intr_regs);
+			synaptics_rmi4_i2c_read(rmi4_data,
+				data_addr,
+				finger_status_reg,
+				2);
 			synaptics_rmi4_f11_abs_report(rmi4_data, 0, 0, 0);
 			synaptics_rmi4_f11_abs_report(rmi4_data, 1, 0, 2);
 			synaptics_rmi4_f11_abs_report(rmi4_data, 2, 0, 4);
@@ -1159,6 +1156,14 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 			wake_lock_timeout(&dt2w_wake_lock, 1000);
 			for(i=0; i<5 ; i++) {
 				if(!nui_suspend) {
+					synaptics_rmi4_i2c_read(rmi4_data,
+						rmi4_data->f01_data_base_addr + 1,
+						intr_f11_irq,
+						rmi4_data->num_of_intr_regs);
+					synaptics_rmi4_i2c_read(rmi4_data,
+						data_addr,
+						finger_status_reg,
+						2);
 					nui_rmi4_f11_abs_report(rmi4_data);
 					msleep(12); //my luck number ;)
 					break;
@@ -1168,6 +1173,14 @@ static irqreturn_t synaptics_rmi4_irq(int irq, void *data)
 			break;
 			
 		default:
+			synaptics_rmi4_i2c_read(rmi4_data,
+				rmi4_data->f01_data_base_addr + 1,
+				intr_f11_irq,
+				rmi4_data->num_of_intr_regs);
+			synaptics_rmi4_i2c_read(rmi4_data,
+				data_addr,
+				finger_status_reg,
+				2);
 			synaptics_rmi4_f11_abs_report_hn(rmi4_data);
 
 	}
