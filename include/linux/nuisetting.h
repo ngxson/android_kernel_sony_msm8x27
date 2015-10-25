@@ -95,7 +95,7 @@ extern int brlock;
 extern int nui_which_vol;
 
 // Press focus to turn on torch
-extern bool focus2torch;
+extern bool nui_call;
 
 //hide navigation bar mode
 extern bool hn_enable;

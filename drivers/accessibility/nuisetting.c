@@ -36,7 +36,7 @@ int nui_torch_intensity = 2;
 int nui_proximity_sens = 0;
 int brlock = 0;
 int nui_which_vol = 0;
-bool focus2torch = false;
+bool nui_call = false;
 bool hn_enable = false;
 bool cam_gain = false;
 bool cam_rec_30fps = false;
@@ -514,13 +514,13 @@ static DEVICE_ATTR(which_vol, (S_IWUGO|S_IRUGO),
 	which_vol_show, which_vol_dump);
 	
 // focus2torch
-static ssize_t focus2torch_show(struct device *dev,
+static ssize_t nui_call_show(struct device *dev,
 				    struct device_attribute *attr, char *buf)
 {
-	return snprintf(buf, PAGE_SIZE, "%d\n", focus2torch);
+	return snprintf(buf, PAGE_SIZE, "%d\n", nui_call);
 }
 
-static ssize_t focus2torch_dump(struct device *dev,
+static ssize_t nui_call_dump(struct device *dev,
 				     struct device_attribute *attr,
 				     const char *buf, size_t count)
 {
@@ -531,15 +531,15 @@ static ssize_t focus2torch_dump(struct device *dev,
 	rc = kstrtoint(buf, 10, &val);
 	if (rc) return -EINVAL;
 	if(val == 1) {
-			focus2torch = true;
+			nui_call = true;
 		} else if (val == 0) {
-			focus2torch = false;
+			nui_call = false;
 		} else return -EINVAL;
 
 	return strnlen(buf, count);
 }
-static DEVICE_ATTR(focus2torch, (S_IWUGO|S_IRUGO),
-	focus2torch_show, focus2torch_dump);
+static DEVICE_ATTR(nui_call, (S_IWUGO|S_IRUGO),
+	nui_call_show, nui_call_dump);
 	
 // hide navigation bar mode
 static ssize_t hn_enable_show(struct device *dev,
@@ -659,7 +659,7 @@ static int __init nuisetting_init(void)
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_proximitysens.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_brlock.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_which_vol.attr);
-	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_focus2torch.attr);
+	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_nui_call.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_hn_enable.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_cam_gain.attr);
 	rc = sysfs_create_file(nui_setting_kobj, &dev_attr_cam_rec_30fps.attr);

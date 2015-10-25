@@ -36,8 +36,6 @@
 #include <linux/wakelock.h>
 
 static bool scr_suspended = false;
-static bool flash_on = false;
-static bool going_to_flash = false;
 static struct wake_lock m_wake_lock;
 
 struct wakeup_data
@@ -348,37 +346,6 @@ static struct attribute_group gpio_keys_attr_group = {
 };
 static bool pressed_vol_up = false;
 
-static void nui_torch(int mode) {
-  unsigned int ret = 0;
-  //char *argv[] = { "/usr/bin/nui_torch", "help!", NULL };
-  static char *envp[] = {"HOME=/", "PATH=/sbin:/system/sbin:/system/bin:/system/xbin", NULL };
-  char *argvon[] = { "/system/bin/nui_torch_on", NULL };
-  char *argvoff[] = { "/system/bin/nui_torch_off", NULL };
-  if(mode == 1) {
-	  ret = call_usermodehelper( argvon[0], argvon, envp, 1 );
-  } else {
-	  ret = call_usermodehelper( argvoff[0], argvoff, envp, 1 );
-  }
-
-  printk("ngxson:umh done %d\n", ret);
-  return;
-}
-
-static void turn_on_torch_work(struct work_struct * turn_on_torch) {
-	wake_lock_timeout(&m_wake_lock, 2000);
-	printk("ngxson: focus2torch work\n");
-	msleep(1500);
-	if(going_to_flash) {
-		printk("ngxson: turn on torch\n");
-		flash_on = true;
-		nui_torch(1);
-	} else {
-		flash_on = false;
-	}
-	return;
-}
-static DECLARE_WORK(turn_on_torch, turn_on_torch_work);
-
 static void gpio_keys_report_event(struct gpio_button_data *bdata)
 {
 	struct gpio_keys_button *button = bdata->button;
@@ -389,8 +356,9 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 	int m_focus_key;
 	//cputime64_t time_now = ktime_to_ms(ktime_get());
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
+	bool m_state = !!state;
 
-	pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
+	//pr_debug( "GKEY : %s Key %s\n", button->desc, !!state ? "down" : "up" );
 	//printk( "ngxson : keycode %d state %s\n", button->code, !!state ? "down" : "up" );
 
 	//for camera and focus key
@@ -402,48 +370,58 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 		m_focus_key = focus_key;
 	}
 	
-	if ((focus2torch) && (scr_suspended) && (btn_code == 528)) {
-		m_camera_key = 0;
-		m_focus_key = 0;
-		if(!!state) {
-			going_to_flash = true;
-			schedule_work(&turn_on_torch);
-		} else {
-			going_to_flash = false;
-			if(flash_on) nui_torch(0);
-		}
-	}
-	
-	if(btn_code == 766) {
-		if((m_camera_key == 766) || (m_camera_key == 528)) {
-			input_event(input, type, m_camera_key, !!state);
+	switch(btn_code) {
+		case 766:
+			if((m_camera_key == 766) || (m_camera_key == 528)) {
+				input_event(input, type, m_camera_key, m_state);
+				input_sync(input);
+			} else btn_press(m_camera_key, m_state);
+			break;
+			
+		case 528:
+			if((pressed_vol_up) && (m_state))
+					nui_set_brightness(40);
+			if((m_focus_key == 528) || (m_focus_key == 766)) {
+				input_event(input, type, m_focus_key, m_state);
+				input_sync(input);
+			} else btn_press(m_focus_key, m_state);
+			break;
+			
+		case 115:
+			// 61 call
+			// 63 end call
+			// Hold vol up and then press focus once to force brghtness to 40
+			// vol down 114
+			// vol up 115
+			// focus 528
+			// detector
+			nui_which_vol = 2;
+			if(m_state) pressed_vol_up = true;
+			else pressed_vol_up = false;
+			//
+			if(nui_call) {
+				input_event(input, type, 61, m_state); //receive call
+				if(!m_state) nui_call = false;
+			} else {
+				input_event(input, type, btn_code, m_state);
+			}
 			input_sync(input);
-		} else btn_press(m_camera_key, !!state);
-	} else if(btn_code == 528) {
-		if((m_focus_key == 528) || (m_focus_key == 766)) {
-			input_event(input, type, m_focus_key, !!state);
+			break;
+			
+		case 114:
+			nui_which_vol = 1;
+			if(nui_call) {
+				input_event(input, type, 63, m_state); //end call
+				if(!m_state) nui_call = false;
+			} else {
+				input_event(input, type, btn_code, m_state);
+			}
 			input_sync(input);
-		} else btn_press(m_focus_key, !!state);
-	} else {
-		input_event(input, type, btn_code, !!state);
-		input_sync(input);
-	}
-	
-	// Hold vol up and then press focus once to force brghtness to 40
-	// vol down 114
-	// vol up 115
-	// focus 528
-	// detector
-	if(btn_code == 115) {
-		nui_which_vol = 2;
-		if(!!state) pressed_vol_up = true;
-		else pressed_vol_up = false;
-	} else if((btn_code == 528) && (pressed_vol_up) && (!!state)) {
-		nui_set_brightness(40);
-	}
-	
-	if(btn_code == 114) {
-		nui_which_vol = 1;
+			break;
+			
+		default:
+			input_event(input, type, btn_code, m_state);
+			input_sync(input);
 	}
 }
 
@@ -744,6 +722,9 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 
 		input_set_capability(input, type, button->code);
 	}
+	
+	input_set_capability(input, EV_KEY, 61);
+	input_set_capability(input, EV_KEY, 63);
 
 	error = sysfs_create_group(&pdev->dev.kobj, &gpio_keys_attr_group);
 	if (error) {
@@ -871,7 +852,6 @@ static void key_early_suspend(struct early_suspend *h) {
 
 static void key_late_resume(struct early_suspend *h) {
 	scr_suspended = false;
-	if(flash_on) nui_torch(0);
 }
 
 static struct early_suspend key_early_suspend_handler = {
