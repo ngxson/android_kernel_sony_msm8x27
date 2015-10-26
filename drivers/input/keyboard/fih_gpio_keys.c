@@ -848,6 +848,7 @@ static const struct dev_pm_ops gpio_keys_pm_ops = {
 
 static void key_early_suspend(struct early_suspend *h) {
 	scr_suspended = true;
+	nui_call = false;
 }
 
 static void key_late_resume(struct early_suspend *h) {
