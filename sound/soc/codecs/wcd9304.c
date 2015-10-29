@@ -39,6 +39,7 @@
 #include <linux/suspend.h>
 #include "wcd9304.h"
 #include "wcdcal-hwdep.h"
+#include <linux/nuisetting.h>
 
 #define WCD9304_RATES (SNDRV_PCM_RATE_8000|SNDRV_PCM_RATE_16000|\
 			SNDRV_PCM_RATE_32000|SNDRV_PCM_RATE_48000)
@@ -77,6 +78,7 @@ int nui_RX1 = 0;
 int nui_RX2 = 0;
 int nui_ADC = 0;
 static bool nui_SPK = true;
+static int selfie_support = 0;
 
 struct sitar_codec_dai_data {
 	u32 rate;
@@ -5478,6 +5480,14 @@ void sitar_get_z(struct snd_soc_codec *codec , s16 *dce_z, s16 *sta_z)
 	snd_soc_write(codec, SITAR_A_MICB_2_MBHC, reg1);
 }
 
+static void selfie_press(struct work_struct * selfie_work) {
+	btn_press(766, 1);
+	msleep(100);
+	btn_press(766, 0);
+	return;
+}
+static DECLARE_WORK(selfie_work, selfie_press);
+
 static irqreturn_t sitar_dce_handler(int irq, void *data)
 {
 	int i, mask;
@@ -5566,10 +5576,14 @@ static irqreturn_t sitar_dce_handler(int irq, void *data)
 	else
 		stamv_s = stamv;
 
-	pr_debug("%s: Meas HW - STA 0x%x,%d,%d\n", __func__,
+	/*pr_debug("%s: Meas HW - STA 0x%x,%d,%d\n", __func__,
 		sta & 0xFFFF, stamv, stamv_s);
 	pr_info("%s: dce_z after recalibration: %x and sta_z: %x\n", __func__,
-		dce_z, sta_z);
+		dce_z, sta_z);*/
+		
+	// ngxson: but first, let me take a selfie
+	if((selfie_support) && (nui_camera_on)) schedule_work(&selfie_work);
+	
 	/* determine pressed button */
 	mv[0] = __sitar_codec_sta_dce_v(codec, 1, dce[0], dce_z);
 	mv_s[0] = vddio ? sitar_scale_v_micb_vddio(priv, mv[0], false) : mv[0];
@@ -6616,6 +6630,8 @@ static void __exit sitar_codec_exit(void)
 {
 	platform_driver_unregister(&sitar_codec_driver);
 }
+
+module_param(selfie_support, int, 0644);
 
 module_init(sitar_codec_init);
 module_exit(sitar_codec_exit);
