@@ -511,7 +511,7 @@ static ssize_t synaptics_rmi4_0dbutton_store(struct device *dev,
 
 static void inline nui_rmi4_proc_fngr_press(unsigned int x, unsigned int y)
 {
-	if (dt2w_switch > 0) {
+	if (dt2w_switch) {
 			dt2w_pressed = true;
 			if(((x) <100) || ((x)>900) 
 					|| ((y)<50) || ((y) >950)) {
@@ -525,7 +525,7 @@ static void inline nui_rmi4_proc_fngr_press(unsigned int x, unsigned int y)
 			}
 	}
 	//s2w
-	if((s2w_switch > 0)) {
+	if((s2w_switch)) {
 		if(!s2w_finger) {
 			if(((y) < 950)) {
 				s2w_reset();
@@ -539,7 +539,7 @@ static void inline nui_rmi4_proc_fngr_press(unsigned int x, unsigned int y)
 	}
 	
 	//media control
-	if((s2m > 0)) {
+	if(s2m) {
 		if(!s2m_finger) {
 			if(((y) > 256)) {
 				s2m_reset();
@@ -559,7 +559,7 @@ static void inline nui_rmi4_proc_fngr_press(unsigned int x, unsigned int y)
 
 static void inline nui_rmi4_proc_fngr_release(unsigned int x, unsigned int y)
 {
-	if (dt2w_switch > 0) {
+	if (dt2w_switch) {
 			dt2w_got_xy = true;
 			if (!dt2w_pressed) detect_doubletap2wake((x), (y));
 			else if (dt2w_ok) {
@@ -593,9 +593,9 @@ static void inline nui_rmi4_proc_fngr_move(unsigned int x, unsigned int y)
 				}
 			} else s2w_reset();
 		}
-		
-		if(scr_suspended) s2m_detect(x,y);
 	}
+	
+	if(s2m_finger) s2m_detect(x,y);
 
 	return;
 }
