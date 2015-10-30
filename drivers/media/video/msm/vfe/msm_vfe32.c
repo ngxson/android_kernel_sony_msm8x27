@@ -33,6 +33,7 @@
 atomic_t irq_cnt;
 static wait_queue_head_t recovery_wait;
 bool nui_cam_rec = false;
+bool nui_camera_on = false;
 
 #define VFE32_AXI_OFFSET 0x0050
 #define vfe32_get_ch_ping_addr(base, chn) \
@@ -2130,6 +2131,8 @@ static int vfe32_proc_general(
 
 		vfe32_ctrl->share_ctrl->current_mode =
 			vfe_params.operation_mode;
+		
+		nui_camera_on = true;
 
 		rc = vfe32_start(pmctl, vfe32_ctrl);
 		break;
@@ -3315,6 +3318,7 @@ static int vfe32_proc_general(
 
 		vfe32_stop(vfe32_ctrl);
 		nui_cam_rec = false;
+		nui_camera_on = false;
 		break;
 
 	case VFE_CMD_SYNC_TIMER_SETTING:
