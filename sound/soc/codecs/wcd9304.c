@@ -75,10 +75,12 @@
 
 int nui_TX1 = 0;
 int nui_RX1 = 0;
+int nui_RX1_EAR = 4;
 int nui_RX2 = 0;
-int nui_ADC = 0;
+//int nui_ADC = 0;
 static bool nui_SPK = true;
 static int selfie_support = 0;
+static int sound_control_enable = 0;
 
 struct sitar_codec_dai_data {
 	u32 rate;
@@ -3007,7 +3009,7 @@ static int sitar_volatile(struct snd_soc_codec *ssc, unsigned int reg)
 	return 0;
 }
 
-static void nui_save_sitar(unsigned int reg, unsigned int value) {
+static inline void nui_save_sitar(unsigned int reg, unsigned int value) {
 	switch(reg) {
 		case SITAR_A_CDC_TX1_VOL_CTL_GAIN:
 			//printk("ngxson sitar write %d %d\n", reg, value);
@@ -3015,7 +3017,7 @@ static void nui_save_sitar(unsigned int reg, unsigned int value) {
 				nui_TX1 = value;
 			break;
 			
-		case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
+		/*case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
 			//printk("ngxson sitar write %d %d\n", reg, value);
 			if((!nui_RX1) && (nui_SPK))
 				nui_RX1 = value;
@@ -3025,7 +3027,7 @@ static void nui_save_sitar(unsigned int reg, unsigned int value) {
 			//printk("ngxson sitar write %d %d\n", reg, value);
 			if(!nui_RX2)
 				nui_RX2 = value;
-			break;
+			break;*/
 			
 		case SITAR_A_RX_EAR_EN:
 			if(value) {
@@ -3035,62 +3037,64 @@ static void nui_save_sitar(unsigned int reg, unsigned int value) {
 				//printk("ngxson EAR disable\n");
 				nui_SPK = true;
 			}
+			break;
 			
-		case SITAR_A_TX_1_2_EN:
+		/*case SITAR_A_TX_1_2_EN:
 			if(!nui_ADC)
 				nui_ADC = value;
-			break;
+			break;*/
 		}
 	return;
 }
 
-static int nui_restore_sitar(unsigned int reg, unsigned int value) {
-	switch(reg) {
-		case SITAR_A_CDC_TX1_VOL_CTL_GAIN:
-			if(nui_TX1 != 0)
-				return nui_TX1;
-			else return value;
-			break;
+static inline int nui_restore_sitar(unsigned int reg, unsigned int value) {
+	if(sound_control_enable) {
+		switch(reg) {
+			case SITAR_A_CDC_TX1_VOL_CTL_GAIN:
+				if(nui_TX1 != 0)
+					return nui_TX1;
+				else return value;
+				break;
+				
+			case SITAR_A_CDC_TX2_VOL_CTL_GAIN:
+				if(nui_TX1 != 0)
+					return nui_TX1;
+				else return value;
+				break;
+				
+			case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
+				if(nui_SPK) return nui_RX1;
+				else return nui_RX1_EAR;
+				break;
 			
-		case SITAR_A_CDC_TX2_VOL_CTL_GAIN:
-			if(nui_TX1 != 0)
-				return nui_TX1;
-			else return value;
-			break;
-			
-		case SITAR_A_CDC_RX1_VOL_CTL_B2_CTL:
-			if((nui_RX1 != 0) && nui_SPK)
-				return nui_RX1;
-			else return value;
-			break;
-		
-		case SITAR_A_CDC_RX2_VOL_CTL_B2_CTL:
-			if(nui_RX2 != 0)
-				return nui_RX2;
-			else return value;
-			break;
-			
-		case SITAR_A_CDC_RX3_VOL_CTL_B2_CTL:
-			if(nui_RX2 != 0)
-				return nui_RX2;
-			else return value;
-			break;
-			
-		case SITAR_A_TX_1_2_EN:
-			if(nui_ADC != 0)
-				return nui_ADC;
-			else return value;
-			break;
-			
-		case SITAR_A_TX_3_EN:
-			if(nui_ADC != 0)
-				return nui_ADC;
-			else return value;
-			break;
-			
-		default:
-			return value;
+			case SITAR_A_CDC_RX2_VOL_CTL_B2_CTL:
+				if(nui_RX2 != 0)
+					return nui_RX2;
+				else return value;
+				break;
+				
+			case SITAR_A_CDC_RX3_VOL_CTL_B2_CTL:
+				if(nui_RX2 != 0)
+					return nui_RX2;
+				else return value;
+				break;
+				
+			/*case SITAR_A_TX_1_2_EN:
+				if(nui_ADC != 0)
+					return nui_ADC;
+				else return value;
+				brea
+				
+			case SITAR_A_TX_3_EN:
+				if(nui_ADC != 0)
+					return nui_ADC;
+				else return value;
+				break;*/
+				
+			default:
+				return value;
 		}
+	} else return value;
 }
 
 #define SITAR_FORMATS (SNDRV_PCM_FMTBIT_S16_LE)
@@ -6632,6 +6636,7 @@ static void __exit sitar_codec_exit(void)
 }
 
 module_param(selfie_support, int, 0644);
+module_param(sound_control_enable, int, 0644);
 
 module_init(sitar_codec_init);
 module_exit(sitar_codec_exit);
