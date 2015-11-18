@@ -30,7 +30,7 @@
 #define PON_CNTL_PULL_UP BIT(7)
 #define PON_CNTL_TRIG_DELAY_MASK (0x7)
 
-#define REBOOT_PWRKEY_DUR          8000
+#define REBOOT_PWRKEY_DUR          6000
 
 /**
  * struct pmic8xxx_pwrkey - pmic8xxx pwrkey information
@@ -81,7 +81,7 @@ static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
 	btn_pressed = false;
 
 	if (pwrkey->press == false) {
-		input_report_key(pwrkey->pwr, KEY_POWER, 1);
+		input_report_key(pwrkey->pwr, KEY_POWER, 0);
 		input_sync(pwrkey->pwr);
 		pwrkey->press = true;
 	} else {

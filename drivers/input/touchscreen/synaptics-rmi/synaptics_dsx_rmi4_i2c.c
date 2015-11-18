@@ -140,7 +140,7 @@ static unsigned char intr_f11_irq[MAX_INTR_REGISTERS];
 static unsigned int hn_one = KEY_BACK;
 static unsigned int hn_two = KEY_HOMEPAGE;
 static unsigned int hn_thr = 580;
-static unsigned int hn_menu = 1;
+static unsigned int hn_m = KEY_MENU;
 //static bool nui_enabled_irq = false;
 //end
 
@@ -249,7 +249,7 @@ void inline btn_press(int i, bool b) {
 static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr_work) {
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
-	if(dt2w_vib == 1) vibrate(70);
+	vibrate(70);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
 	msleep(D2W_PWRKEY_DUR);
@@ -945,9 +945,9 @@ static void hn_pressbtn(struct work_struct *hn_pressbtn_work) {
 			btn_press(hn_thr, false);
 			break;
 		default:
-			btn_press(KEY_MENU, true);
+			btn_press(hn_m, true);
 			msleep(D2W_PWRKEY_DUR);
-			btn_press(KEY_MENU, false);
+			btn_press(hn_m, false);
 	}
 	vibrate(30);
 	mutex_unlock(&pwrkeyworklock);
@@ -1054,7 +1054,7 @@ static inline void synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *
 			if(x < 341) { //back btn
 				hn_btn = 0;
 			} else if (x > 683) {
-				if((x > 992) && hn_menu) hn_btn = 3; //menu btn
+				if(x > 992) hn_btn = 3; //menu btn
 				else hn_btn = 2; //recent btn
 			} else { //home btn
 				hn_btn = 1;
@@ -2300,7 +2300,7 @@ static void __exit synaptics_rmi4_exit(void)
 module_param(hn_one, int, 0644);
 module_param(hn_two, int, 0644);
 module_param(hn_thr, int, 0644);
-module_param(hn_menu, int, 0644);
+module_param(hn_m, int, 0644);
 
 module_init(synaptics_rmi4_init);
 module_exit(synaptics_rmi4_exit);
