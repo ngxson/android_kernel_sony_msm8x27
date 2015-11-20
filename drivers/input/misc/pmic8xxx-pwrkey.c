@@ -19,6 +19,8 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/log2.h>
+#include <linux/mfd/pm8xxx/vibrator.h>
+#include <linux/delay.h>
 
 #include <linux/hrtimer.h>
 #include <linux/reboot.h>

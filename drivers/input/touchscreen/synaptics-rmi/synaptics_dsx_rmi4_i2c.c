@@ -331,7 +331,7 @@ static void mediakey_press(struct work_struct * doubletap2wake_presspwr_work) {
 	
 	if (!mutex_trylock(&pwrkeyworklock))
 		return;
-	if(dt2w_vib == 1) vibrate(50);
+	vibrate(50);
 	if(s2m_right) {
 		if(!s2m_reverse) key_code_m = KEY_NEXTSONG;
 		else key_code_m = KEY_PREVIOUSSONG;
