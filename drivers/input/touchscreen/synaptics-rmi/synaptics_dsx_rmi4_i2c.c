@@ -1054,7 +1054,7 @@ static inline void synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *
 			if(x < 341) { //back btn
 				hn_btn = 0;
 			} else if (x > 683) {
-				if(x > 992) hn_btn = 3; //menu btn
+				if(x > 964) hn_btn = 3; //menu btn
 				else hn_btn = 2; //recent btn
 			} else { //home btn
 				hn_btn = 1;

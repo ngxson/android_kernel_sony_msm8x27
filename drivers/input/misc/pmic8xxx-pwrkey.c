@@ -63,8 +63,8 @@ static irqreturn_t pwrkey_press_irq(int irq, void *_pwrkey)
 		pwrkey->press = true;
 	}
 
-	input_report_key(pwrkey->pwr, KEY_POWER, 1);
-	input_sync(pwrkey->pwr);
+	input_event(pwrkey->pwr, EV_KEY, KEY_POWER, 1);
+	input_event(pwrkey->pwr, EV_SYN, 0, 0);
 
 	return IRQ_HANDLED;
 }
@@ -81,15 +81,15 @@ static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
 	btn_pressed = false;
 
 	if (pwrkey->press == false) {
-		input_report_key(pwrkey->pwr, KEY_POWER, 0);
-		input_sync(pwrkey->pwr);
+		input_event(pwrkey->pwr, EV_KEY, KEY_POWER, 1);
+		input_event(pwrkey->pwr, EV_SYN, 0, 0);
 		pwrkey->press = true;
 	} else {
 		pwrkey->press = false;
 	}
 
-	input_report_key(pwrkey->pwr, KEY_POWER, 0);
-	input_sync(pwrkey->pwr);
+	input_event(pwrkey->pwr, EV_KEY, KEY_POWER, 0);
+	input_event(pwrkey->pwr, EV_SYN, 0, 0);
 
 	return IRQ_HANDLED;
 }
