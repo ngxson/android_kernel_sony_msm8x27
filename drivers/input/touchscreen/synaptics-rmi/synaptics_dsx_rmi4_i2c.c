@@ -326,7 +326,7 @@ void inline s2m_reset(void) {
 	s2m_right = true;
 }
 
-static void mediakey_press(struct work_struct * doubletap2wake_presspwr_work) {
+static void mediakey_press(struct work_struct * mediakey_press_work) {
 	int key_code_m;
 	
 	if (!mutex_trylock(&pwrkeyworklock))
