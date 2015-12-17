@@ -71,6 +71,7 @@ void draw_nui_logo(int logo);
  * 2 for TORCH_140P63_MA (default)
  */
 extern int nui_torch_intensity;
+void nui_fire_torch(bool on);
 
 /*
  * Proximity sensor sensitive

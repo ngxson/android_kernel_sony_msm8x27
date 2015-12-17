@@ -381,6 +381,7 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 		case 528:
 			if((pressed_vol_up) && (m_state))
 					nui_set_brightness(40);
+					//nui_fire_torch(true);
 			if((m_focus_key == 528) || (m_focus_key == 766)) {
 				input_event(input, type, m_focus_key, m_state);
 				input_sync(input);

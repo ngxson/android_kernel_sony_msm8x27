@@ -25,6 +25,7 @@
 #include <mach/gpio.h>
 #include "msm_camera_i2c.h"
 #include <linux/nuisetting.h>
+#include <linux/module.h>
 
 struct flash_work {
 	struct work_struct my_work;
@@ -486,6 +487,8 @@ int msm_camera_flash_led(
 		rc = gpio_request(external->led_en, "sgm3141");
 		CDBG("MSM_CAMERA_LED_INIT: gpio_req: %d %d\n",
 				external->led_en, rc);
+		printk("MSM_CAMERA_LED_INIT ngxson: gpio_req: %d %d\n",
+				external->led_en, rc);
 		if (!rc)
 			gpio_direction_output(external->led_en, 0);
 		else
@@ -551,7 +554,7 @@ int msm_camera_flash_external(
 				if (rc < 0 || lm3642_client == NULL) {
 					pr_err("lm3642_i2c_driver add failed\n");
 					rc = -ENOTSUPP;
-					return rc;
+					//return rc;
 				}
 			}
 		} else {
@@ -573,10 +576,11 @@ int msm_camera_flash_external(
         if (rc < 0)
             pr_err("lm3642_control(TORCH_OFF, MODES_STASNDBY, PIN_DISABLED) fail !\n");
 
+        /*
         if (lm3642_client) {
             i2c_del_driver(&lm3642_i2c_driver);
             lm3642_client = NULL;
-        }
+        } */
 		break;
 
 	case MSM_CAMERA_LED_OFF:
@@ -617,6 +621,28 @@ int msm_camera_flash_external(
 		break;
 	}
 	return rc;
+}
+
+void nui_fire_torch(bool on) {
+	int rc = 0;
+	
+	if(on) {
+			if (!lm3642_client) {
+				rc = i2c_add_driver(&lm3642_i2c_driver);
+				if (rc < 0 || lm3642_client == NULL) {
+					printk("ngxson: lm3642_i2c_driver add failed\n");
+				}
+			}
+		rc = lm3642_init(PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+	    if (nui_torch_intensity==0) 
+			rc = lm3642_control(TORCH_46P88_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		else if (nui_torch_intensity==1) 
+			rc = lm3642_control(TORCH_93P74_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		else
+			rc = lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+     } else {
+		 rc = lm3642_control(TORCH_OFF, MODES_STASNDBY, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+	 }
 }
 
 #else
@@ -1147,3 +1173,11 @@ int msm_flash_ctrl(struct msm_camera_sensor_info *sdata,
 	}
 	return rc;
 }
+
+static int __init msm_flash_init(void)
+{
+	i2c_add_driver(&lm3642_i2c_driver);
+	return 0;
+}
+
+module_init(msm_flash_init);
