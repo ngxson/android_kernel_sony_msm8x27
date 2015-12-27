@@ -9,7 +9,7 @@
 #include <linux/mfd/pm8xxx/pm8921-charger.h>//PERI-BJ-Modify_Power_Off_Led_Init-00+
 #endif
 
-static const char			*select_func[]		= { "GPIO", "MPP", "SYS_GPIO", "LUT" }; //MTD-SW3-PERIPHERAL-OH-LED_Porting-00+
+//static const char			*select_func[]		= { "GPIO", "MPP", "SYS_GPIO", "LUT" }; //MTD-SW3-PERIPHERAL-OH-LED_Porting-00+
 static const char			*current_sink_table[]	= { "5mA", "10mA", "15mA", "20mA", "25mA", "30mA", "35mA", "40mA" };
 static const char			*current_rgb_table[]	= { "0mA", "4mA", "8mA", "12mA"}; //PERI-BJ-SetCurrent-00+
 
@@ -177,6 +177,7 @@ static void	led_fade_in_out_set( struct led_data *data, struct command_parameter
 			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
+			pmic_data->interval = 200;
 			pmic_data->command	= SMEM_CMD_LED_FADE_IN_OUT;
 			pmic_data->hardware	= data->use_hw;
 			pmic_data->control	= parameter->para1;
@@ -282,7 +283,7 @@ static void	led_on_off_check_mode( struct led_data *data, struct command_paramet
 		led_on_off_set( data, parameter );
 }
 
-static void	led_blinking_check_mode( struct led_data *data, struct command_parameter *parameter )
+static inline void	led_blinking_check_mode_nui( struct led_data *data, struct command_parameter *parameter )
 {
 	if( data->special_mode )
 		LED_MSG( "%s led, special mode", data->name );
@@ -296,6 +297,23 @@ static void	led_fade_in_out_check_mode( struct led_data *data, struct command_pa
 		LED_MSG( "%s led, special mode", data->name );
 	else
 		led_fade_in_out_set( data, parameter );
+}
+
+static void	led_blinking_check_mode( struct led_data *data, struct command_parameter *parameter )
+{
+	//if(nui_fade_led)
+	//if(true)
+		struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
+		if((pmic_data->blinking_pwm1 == 0) && (pmic_data->blinking_pwm2 == 0))
+			led_blinking_check_mode_nui( data, parameter );
+		else
+			pmic_data->interval = 200;
+			if(pmic_data->blinking_pwm1 == 0) pmic_data->fade_in_out_pwm = pmic_data->blinking_pwm2;
+			else pmic_data->fade_in_out_pwm = pmic_data->blinking_pwm1;
+			led_fade_in_out_set( data, parameter );
+		
+	//else
+	//	led_blinking_check_mode_nui( data, parameter );
 }
 
 static void	led_sw_blinking_set( struct led_data *data, struct command_parameter *parameter )
@@ -511,7 +529,8 @@ static void	led_fade_in_out_interval_set( struct led_data *data, struct command_
 			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
-			pmic_data->interval	= parameter->para1;
+			//pmic_data->interval	= parameter->para1;
+			pmic_data->interval	= 200;
 			mutex_unlock( &data->lock );
 			LED_MSG( "PMIC %s led(%s), set intervale(%d)", *( select_func + data->use_hw ), data->name, pmic_data->interval );
 			break;
@@ -737,9 +756,12 @@ static void	led_set_toggle_loop_ramp( struct led_data *data, struct command_para
 			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
-			pmic_data->toggle_up_down	= parameter->para1;
-			pmic_data->ramp_loop	= parameter->para2;
-			pmic_data->ramp_up_down	= parameter->para3;
+			//pmic_data->toggle_up_down	= parameter->para1;
+			//pmic_data->ramp_loop	= parameter->para2;
+			//pmic_data->ramp_up_down	= parameter->para3;
+			pmic_data->toggle_up_down	= 1;
+			pmic_data->ramp_loop	= 1;
+			pmic_data->ramp_up_down	= 1;
 			mutex_unlock( &data->lock );
 			LED_MSG( "PMIC %s led(%s), [Toggle:Loop:Ramp]=[%s:%s:%s]", *( select_func + data->use_hw ), data->name, pmic_data->toggle_up_down ? "Yes" : "No", pmic_data->ramp_loop ? "Yes" : "No", pmic_data->ramp_up_down ? "Yes" : "No" );
 			break;
@@ -771,7 +793,8 @@ static void	led_set_toggle( struct led_data *data, struct command_parameter *par
 			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
-			pmic_data->toggle_up_down	= parameter->para1;
+			//pmic_data->toggle_up_down	= parameter->para1;
+			pmic_data->toggle_up_down	= 1;
 			mutex_unlock( &data->lock );
 			LED_MSG( "PMIC %s led(%s), Toggle(%s)", *( select_func + data->use_hw ), data->name, pmic_data->toggle_up_down ? "Yes" : "No" );
 			break;
@@ -803,7 +826,8 @@ static void	led_set_loop( struct led_data *data, struct command_parameter *param
 			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
-			pmic_data->ramp_loop	= parameter->para1;
+			//pmic_data->ramp_loop	= parameter->para1;
+			pmic_data->ramp_loop	= 1;
 			mutex_unlock( &data->lock );
 			LED_MSG( "PMIC %s led(%s), Loop(%s)", *( select_func + data->use_hw ), data->name, pmic_data->ramp_loop ? "Yes" : "No" );
 			break;
@@ -835,7 +859,8 @@ static void	led_set_ramp( struct led_data *data, struct command_parameter *param
 			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
-			pmic_data->ramp_up_down	= parameter->para1;
+			//pmic_data->ramp_up_down	= parameter->para1;
+			pmic_data->ramp_up_down	= 1;
 			mutex_unlock( &data->lock );
 			LED_MSG( "PMIC %s led(%s), Ramp(%s)", *( select_func + data->use_hw ), data->name, pmic_data->ramp_up_down ? "Yes" : "No" );
 			break;
@@ -864,10 +889,10 @@ static void	led_fade_in_out_brightness_set( struct led_data *data, struct comman
 		case	LED_HW_PMIC_MPP :
 		case	LED_HW_PMIC_LPG: //MTD-SW3-PERIPHERAL-OH-LED_Porting-00+
 		{
-			struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
+			//struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
 
 			mutex_lock( &data->lock );
-			pmic_data->fade_in_out_pwm	= parameter->para1;
+			//pmic_data->fade_in_out_pwm	= parameter->para1;
 			mutex_unlock( &data->lock );
 			LED_MSG( "PMIC %s led(%s), set fade in/out PWM[%d]", *( select_func + data->use_hw ), data->name, pmic_data->fade_in_out_pwm );
 			break;
@@ -1153,11 +1178,12 @@ static void	led_set_fade_in_out_diff_data(struct led_data *data, struct command_
 	//PERI-BJ-AddDefaultFadeValue-00*}
 
 	pmic_data->control	= parameter->para1;
-	pmic_data->interval = data->fade_in_interval;
+	pmic_data->interval = 200;
+	//pmic_data->interval = data->fade_in_interval;
 	pmic_data->command	= SMEM_CMD_LED_FADE_IN_OUT;
 	pmic_data->hardware = data->use_hw;
-	pmic_data->toggle_up_down = DISABLE;
-	pmic_data->ramp_loop = DISABLE;
+	pmic_data->toggle_up_down = ENABLE;
+	pmic_data->ramp_loop = ENABLE;
 	pmic_data->ramp_up_down = ENABLE; // Dark -> Bright
 	//pmic_data->blinking_time1	= 500;//100;
 	//pmic_data->blinking_time2	= 500;//100;
