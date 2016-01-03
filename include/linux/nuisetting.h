@@ -108,4 +108,7 @@ extern bool nui_cam_rec;
 extern bool cam_rec_30fps;
 extern bool nui_camera_on;
 
+//breathing light
+extern unsigned int breathing_interval;
+
 #endif	/* _LINUX_NUISETTING_H */

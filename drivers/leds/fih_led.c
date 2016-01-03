@@ -9,6 +9,8 @@
 #include <linux/mfd/pm8xxx/pm8921-charger.h>//PERI-BJ-Modify_Power_Off_Led_Init-00+
 #endif
 
+#include <linux/nuisetting.h>
+
 //static const char			*select_func[]		= { "GPIO", "MPP", "SYS_GPIO", "LUT" }; //MTD-SW3-PERIPHERAL-OH-LED_Porting-00+
 static const char			*current_sink_table[]	= { "5mA", "10mA", "15mA", "20mA", "25mA", "30mA", "35mA", "40mA" };
 static const char			*current_rgb_table[]	= { "0mA", "4mA", "8mA", "12mA"}; //PERI-BJ-SetCurrent-00+
@@ -56,6 +58,10 @@ enum {
 #ifdef POWER_OFF_CHARGING_MECHANISM_SUPPORT
 extern bool is_power_off_charging(void);//PERI-BJ-Modify_Power_Off_Led_Init-00+
 #endif
+
+static bool scr_off = false;
+static bool is_breathing = false;
+static void breathing_led(void);
 
 
 static void	led_on_off_set( struct led_data *data, struct command_parameter *parameter )
@@ -281,6 +287,8 @@ static void	led_on_off_check_mode( struct led_data *data, struct command_paramet
 		LED_MSG( "%s led, special mode", data->name );
 	else
 		led_on_off_set( data, parameter );
+		
+	breathing_led();
 }
 
 static inline void	led_blinking_check_mode_nui( struct led_data *data, struct command_parameter *parameter )
@@ -304,13 +312,16 @@ static void	led_blinking_check_mode( struct led_data *data, struct command_param
 	//if(nui_fade_led)
 	//if(true)
 		struct led_pmic_data	*pmic_data	= &data->detail.pmic_data;
-		if((pmic_data->blinking_pwm1 == 0) && (pmic_data->blinking_pwm2 == 0))
-			led_blinking_check_mode_nui( data, parameter );
-		else
+		//if((pmic_data->blinking_pwm1 == 0) && (pmic_data->blinking_pwm2 == 0))
+		//	led_blinking_check_mode_nui( data, parameter );
+		//else {
 			pmic_data->interval = 200;
 			if(pmic_data->blinking_pwm1 == 0) pmic_data->fade_in_out_pwm = pmic_data->blinking_pwm2;
 			else pmic_data->fade_in_out_pwm = pmic_data->blinking_pwm1;
 			led_fade_in_out_set( data, parameter );
+		//}
+		
+		breathing_led();
 		
 	//else
 	//	led_blinking_check_mode_nui( data, parameter );
@@ -1861,6 +1872,8 @@ static ssize_t led_info( void *node_data, struct device_attribute *attr, char *b
 
 static void	led_early_suspend_function(struct early_suspend *handler)
 {
+	scr_off = true;
+	breathing_led();
 	/* struct wake_lock		*timeout_wakelock	= &container_of(handler, struct leds_driver_data, led_early_suspend)->timeout_wakelock;
 	struct BS_data		*led_datas	= container_of(handler, struct leds_driver_data, led_early_suspend)->index_buffer;
 	unsigned int		count		= container_of(handler, struct leds_driver_data, led_early_suspend)->count;
@@ -1900,6 +1913,77 @@ static void	led_early_suspend_function(struct early_suspend *handler)
 
 static void	led_late_resume_function(struct early_suspend *handler)
 {
+	scr_off = false;
+	breathing_led();
+}
+
+static void breathing_led(void)
+{
+	struct led_data 	*destination_r	= leds_data + 2;
+	struct led_data 	*destination_g	= leds_data + 1;
+	struct led_data 	*destination_b	= leds_data + 0;
+	
+	struct led_pmic_data	*pmic_data_r	= &destination_r->detail.pmic_data;
+	struct led_pmic_data	*pmic_data_g	= &destination_g->detail.pmic_data;
+	struct led_pmic_data	*pmic_data_b	= &destination_b->detail.pmic_data;
+	
+	if(scr_off) {
+		if((breathing_interval > 0)
+				&& (pmic_data_r->control == 0) 
+				&& (pmic_data_g->control == 0)
+				&& (pmic_data_b->control == 0)){
+			mutex_lock( &destination_r->lock );
+			is_breathing = true;		
+			
+			pmic_data_r->interval   = 200;
+			pmic_data_r->command	= SMEM_CMD_LED_FADE_IN_OUT;
+			pmic_data_r->hardware	= LED_HW_PMIC_LPG;
+			pmic_data_r->fade_in_out_pwm = 450;
+			pmic_data_r->blinking_time1	= 100;
+			pmic_data_r->blinking_time2	= breathing_interval;
+			pmic_data_r->control	= 1;
+			
+			pmic_data_g->interval   = 200;
+			pmic_data_g->command	= SMEM_CMD_LED_FADE_IN_OUT;
+			pmic_data_g->hardware	= LED_HW_PMIC_LPG;
+			pmic_data_g->fade_in_out_pwm = 450;
+			pmic_data_g->blinking_time1	= 100;
+			pmic_data_g->blinking_time2	= breathing_interval;
+			pmic_data_g->control	= 1;
+			
+			pmic_data_b->interval   = 200;
+			pmic_data_b->command	= SMEM_CMD_LED_FADE_IN_OUT;
+			pmic_data_b->hardware	= LED_HW_PMIC_LPG;
+			pmic_data_b->fade_in_out_pwm = 450;
+			pmic_data_b->blinking_time1	= 100;
+			pmic_data_b->blinking_time2	= breathing_interval;
+			pmic_data_b->control	= 1;
+			
+			common_control_leds(destination_r->pwm_dev, pmic_data_r);
+			common_control_leds(destination_g->pwm_dev, pmic_data_g);
+			common_control_leds(destination_b->pwm_dev, pmic_data_b);
+			
+			mutex_unlock( &destination_r->lock );
+		} else {
+			if((pmic_data_r->fade_in_out_pwm != 450) 
+				&& (pmic_data_g->fade_in_out_pwm != 450)
+				&& (pmic_data_b->fade_in_out_pwm != 450))
+			is_breathing = false;
+		}
+	} else {
+		if(is_breathing) {
+			mutex_lock( &destination_r->lock );
+			pmic_data_r->control	= 0;
+			pmic_data_g->control	= 0;
+			pmic_data_b->control	= 0;
+			common_control_leds(destination_r->pwm_dev, pmic_data_r);
+			common_control_leds(destination_g->pwm_dev, pmic_data_g);
+			common_control_leds(destination_b->pwm_dev, pmic_data_b);
+			mutex_unlock( &destination_r->lock );
+			
+			is_breathing = false;
+		}
+	}
 }
 
 static int msm_pmic_led_probe(struct platform_device *pdev)
@@ -2071,7 +2155,7 @@ static int msm_pmic_led_probe(struct platform_device *pdev)
 	wake_lock_init( &driver_data->timeout_wakelock, WAKE_LOCK_SUSPEND, "fih_led_timeout" );
 	wake_lock_init( &driver_data->normal_wakelock, WAKE_LOCK_SUSPEND, "fih_led_normal" );
 
-	driver_data->led_early_suspend.level	= EARLY_SUSPEND_LEVEL_DISABLE_FB;
+	driver_data->led_early_suspend.level	= EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 	driver_data->led_early_suspend.suspend	= led_early_suspend_function;
 	driver_data->led_early_suspend.resume	= led_late_resume_function;
 	register_early_suspend(&driver_data->led_early_suspend);
