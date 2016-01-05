@@ -45,6 +45,7 @@ enum msm_cam_flash_stat{
 	MSM_CAM_FLASH_OFF,
 	MSM_CAM_FLASH_ON,
 };
+static bool nui_ready = false;
 
 #ifdef CONFIG_MSM_CAMERA_FLASH_LM3642
 //Define for register reference
@@ -112,6 +113,8 @@ enum lm3642_flash_current_val{
 	FLASH_1406P25_MA,
 	FLASH_1500_MA,//Default
 };
+
+static int no_ramp_torch = 0;
 
 static int lm3642_write_bits(uint8_t reg, uint8_t val, uint8_t mask, uint8_t shift)
 {
@@ -193,6 +196,13 @@ static int lm3642_control(uint8_t brightness, enum lm3642_mode opmode,
 	switch (opmode) {
 	case MODES_TORCH:
         printk("lm3642_control: case MODES_TORCH ~ brightness = %d\n", brightness);
+        if(no_ramp_torch) {
+			rc = lm3642_write_bits(0x6, 0x0, 0x7, 3);
+			rc = lm3642_write_bits(0x6, 0x0, 0x7, 0);
+		} else {
+			rc = lm3642_write_bits(0x6, 0x5, 0x7, 3);
+			rc = lm3642_write_bits(0x6, 0x5, 0x7, 0);
+		}
 		rc = lm3642_write_bits(REG_I_CTRL,
 				  brightness - 1, TORCH_I_MASK, TORCH_I_SHIFT);
 
@@ -265,8 +275,9 @@ static int lm3642_i2c_probe(struct i2c_client *client,
 	i2c_client.client = lm3642_client;
 	i2c_client.addr_type = MSM_CAMERA_I2C_BYTE_ADDR;
 	rc = lm3642_init(PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+	nui_ready = true;
 	if (rc < 0) {
-		lm3642_client = NULL;
+		//lm3642_client = NULL;
 		goto probe_failure;
 	}
 
@@ -548,8 +559,8 @@ int msm_camera_flash_external(
 
 	case MSM_CAMERA_LED_INIT:
         printk("msm_camera_flash_external: case MSM_CAMERA_LED_INIT ~\n");
-		if (external->flash_id == MAM_CAMERA_EXT_LED_FLASH_LM3642) {
-			if (!lm3642_client) {
+		/*if (external->flash_id == MAM_CAMERA_EXT_LED_FLASH_LM3642) {
+			if (lm3642_client == NULL) {
 				rc = i2c_add_driver(&lm3642_i2c_driver);
 				if (rc < 0 || lm3642_client == NULL) {
 					pr_err("lm3642_i2c_driver add failed\n");
@@ -561,11 +572,11 @@ int msm_camera_flash_external(
 			pr_err("Flash id not supported\n");
 			rc = -ENOTSUPP;
 			return rc;
-		}
+		}*/
 
-        rc = lm3642_init(PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-        if (rc < 0)
-            pr_err("lm3642_init() fail !\n");
+        //rc = lm3642_init(PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+        //if (rc < 0)
+        //    pr_err("lm3642_init() fail !\n");
         break;
 
 	case MSM_CAMERA_LED_RELEASE:
@@ -596,12 +607,18 @@ int msm_camera_flash_external(
         printk("msm_camera_flash_external: case MSM_CAMERA_LED_LOW ~\n");
 /*MM-UW-Add torch current-00+{*/
         CDBG("lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED)\n");
-        if (nui_torch_intensity==0) 
-			rc = lm3642_control(TORCH_46P88_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-		else if (nui_torch_intensity==1) 
-			rc = lm3642_control(TORCH_93P74_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-		else
-			rc = lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+        switch(nui_torch_intensity) {
+			case 0:
+				lm3642_control(TORCH_46P88_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+				break;
+				
+			case 1:
+				lm3642_control(TORCH_93P74_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+				break;
+				
+			default:
+				lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		}
         if (rc < 0)
             pr_err("lm3642_control(TORCH_140P63_MA, MODES_TORCH) fail !\n");
 		break;
@@ -623,26 +640,51 @@ int msm_camera_flash_external(
 	return rc;
 }
 
-void nui_fire_torch(bool on) {
+/*static void nui_send_i2c(unsigned char *txdata) {
 	int rc = 0;
+	struct i2c_msg msg[] = {
+		{
+			.addr = 0x63,
+			.flags = 0,
+			.len = 2,
+			.buf = txdata,
+		},
+	};
+	rc = i2c_transfer(lm3642_client->adapter, msg, 1);
+	printk("ngxson rc=%d\n", rc);
+}*/
+
+void nui_fire_torch(bool on) {
+	/*int rc = 0;
+	unsigned char buf[2];
+	struct msm_camera_sensor_info *s_info  = NULL;
 	
-	if(on) {
-			if (!lm3642_client) {
-				rc = i2c_add_driver(&lm3642_i2c_driver);
-				if (rc < 0 || lm3642_client == NULL) {
-					printk("ngxson: lm3642_i2c_driver add failed\n");
-				}
-			}
-		rc = lm3642_init(PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-	    if (nui_torch_intensity==0) 
-			rc = lm3642_control(TORCH_46P88_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-		else if (nui_torch_intensity==1) 
-			rc = lm3642_control(TORCH_93P74_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-		else
-			rc = lm3642_control(TORCH_140P63_MA, MODES_TORCH, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-     } else {
-		 rc = lm3642_control(TORCH_OFF, MODES_STASNDBY, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
-	 }
+	if(nui_ready) {
+		s_info = lm3642_client->dev.platform_data;
+			if (s_info->actuator_info->vcm_enable) {
+		rc = gpio_request(s_info->actuator_info->vcm_pwd,
+				"msm_actuator");
+		if (rc < 0)
+			pr_err("%s: gpio_request:msm_actuator %d failed\n",
+				__func__, s_info->actuator_info->vcm_pwd);
+		rc = gpio_direction_output(s_info->actuator_info->vcm_pwd, 0);
+		if (rc < 0)
+			pr_err("%s: gpio:msm_actuator %d direction can't be set\n",
+				__func__, s_info->actuator_info->vcm_pwd);
+		gpio_free(s_info->actuator_info->vcm_pwd);
+	}
+		
+		if(on) {
+			buf[0] = 0x9;
+			buf[1] = 0x8;
+			nui_send_i2c(buf);
+			buf[0] = 0xa;
+			buf[1] = 0x2;
+			nui_send_i2c(buf);
+		} else {
+			rc = lm3642_control(TORCH_OFF, MODES_STASNDBY, PIN_DISABLED, PIN_DISABLED, PIN_DISABLED);
+		}
+	}*/
 }
 
 #else
@@ -1179,5 +1221,7 @@ static int __init msm_flash_init(void)
 	i2c_add_driver(&lm3642_i2c_driver);
 	return 0;
 }
+
+module_param(no_ramp_torch, int, 0644);
 
 module_init(msm_flash_init);
