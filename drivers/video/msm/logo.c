@@ -40,6 +40,8 @@
 #define fb_size(fb)	((fb)->var.xres * (fb)->var.yres * 2)
 #endif
 
+static struct fb_info *fb_info;
+
 #if !defined(CONFIG_FB_MSM_DEFAULT_DEPTH_RGBA8888)
 static void memset16(void *_ptr, unsigned short val, unsigned count)
 {
@@ -238,71 +240,46 @@ error1:
 	return err;
 }
 
-static void draw_logo(void)
-{
-	/* struct fb_info *fb_info = registered_fb[0];
-	int ret = 0, i = 0;
-
-	if (fb_info && fb_info->fbops->fb_open) {
-		ret = fb_info->fbops->fb_open(fb_info, 0);
-		if (ret != 0) {
-			printk(KERN_ERR "[DISPLAY]%s: Can not open fb, ret <%d>\n",
-					__func__, ret);
-		}
-
-		while (++i < 6) {
-			ret = fih_load_565rle_image(INIT_IMAGE_FILE);
-			if (ret == 0) {
-				ret = fb_info->fbops->fb_pan_display(&fb_info->var, fb_info);
-				if (ret == 0) {
-					printk(KERN_INFO "[DISPLAY]%s: Drawing logo\n", __func__);
-					break;
-				}
-			}
-			printk(KERN_ERR "[DISPLAY]%s: failed %d times, ret <%d>\n",
-					__func__, i, ret);
-			msleep(100);
-		};
-	} */
-	draw_nui_logo(0);
-}
-
 void draw_nui_logo(int logo)
 {
-	struct fb_info *fb_info = registered_fb[0];
-	int ret = 0, i = 0;
+	int ret = 0;
 
-	if (fb_info && fb_info->fbops->fb_open) {
-		ret = fb_info->fbops->fb_open(fb_info, 0);
-		if (ret != 0) {
-			printk(KERN_ERR "[ngxson]%s: Can not open fb, ret <%d>\n",
-					__func__, ret);
-		}
-
-		while (++i < 6) {
-			if (logo == 0) ret = fih_load_565rle_image(INIT_IMAGE_FILE);
-			else if (logo == 1) ret = fih_load_565rle_image(INIT_IMAGE_FILE_ONE);
-			else if (logo == 2) ret = fih_load_565rle_image(INIT_IMAGE_FILE_TWO);
-			else ret = fih_load_565rle_image(INIT_IMAGE_FILE_THR);
+	switch(logo) {
+		case 0:
+			ret = fih_load_565rle_image(INIT_IMAGE_FILE);
+			break;
 			
-			if (ret == 0) {
-				ret = fb_info->fbops->fb_pan_display(&fb_info->var, fb_info);
-				if (ret == 0) {
-					printk(KERN_INFO "[ngxson]%s: Drawing logo\n", __func__);
-					break;
-				}
-			}
-			printk(KERN_ERR "[ngxson]%s: failed %d times, ret <%d>\n",
-					__func__, i, ret);
-			msleep(100);
-		};
+		case 1:
+			ret = fih_load_565rle_image(INIT_IMAGE_FILE_ONE);
+			break;
+			
+		case 2:
+			ret = fih_load_565rle_image(INIT_IMAGE_FILE_TWO);
+			break;
+			
+		default:
+			ret = fih_load_565rle_image(INIT_IMAGE_FILE_THR);
+	}
+	
+	if (ret == 0) {
+		ret = fb_info->fbops->fb_pan_display(&fb_info->var, fb_info);
+		if (ret == 0) {
+			printk(KERN_INFO "[ngxson]%s: Drawing logo\n", __func__);
+			return;
+		}
 	}
 }
 
 int __init logo_init(void)
 {
-	if (mdp4_overlay_borderfill_supported())
-		draw_logo();
+	int ret;
+	fb_info = registered_fb[0];
+	ret = fb_info->fbops->fb_open(fb_info, 0);
+	if (ret != 0) {
+		printk(KERN_ERR "[ngxson]%s: Can not open fb, ret <%d>\n",
+				__func__, ret);
+	}
+	draw_nui_logo(0);
 	return 0;
 }
 
