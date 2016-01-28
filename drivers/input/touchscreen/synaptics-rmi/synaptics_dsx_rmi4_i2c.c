@@ -136,7 +136,7 @@ static unsigned char prev_status;
 static unsigned char finger_status_reg[3];
 static unsigned char data[F11_STD_DATA_LEN];
 static unsigned short data_offset;
-static int x, y, wx, wy, prev_x, prev_y, prev_wx, prev_wy;
+static int x, y, wx, wy, prev_x, prev_y, z;
 static unsigned char intr_f11_irq[MAX_INTR_REGISTERS];
 static unsigned int hn_one = KEY_BACK;
 static unsigned int hn_two = KEY_HOMEPAGE;
@@ -850,6 +850,7 @@ static inline void synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi
 		y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
 		wx = (data[3] & MASK_4BIT);
 		wy = (data[3] >> 4) & MASK_4BIT;
+		z = data[4];
 	}
 	prev_status = rmi4_data->finger_state[finger].status;
 	rmi4_data->finger_state[finger].status = finger_status;
@@ -864,6 +865,8 @@ static inline void synaptics_rmi4_f11_abs_report(struct synaptics_rmi4_data *rmi
 			ABS_MT_TOUCH_MAJOR, max(wx, wy));
 	input_report_abs(rmi4_data->input_dev,
 			ABS_MT_TOUCH_MINOR, min(wx, wy));
+	input_report_abs(rmi4_data->input_dev,
+			ABS_MT_PRESSURE, z);
 
 	return;
 }
@@ -943,6 +946,7 @@ static inline void synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *
 		y = (data[1] << 4) | ((data[2] >> 4) & MASK_4BIT);
 		wx = (data[3] & MASK_4BIT);
 		wy = (data[3] >> 4) & MASK_4BIT;
+		z = data[4];
 	}
 	prev_status = rmi4_data->finger_state[finger].status;
 	prev_x = rmi4_data->finger_state[finger].x;
@@ -968,6 +972,8 @@ static inline void synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *
 					ABS_MT_TOUCH_MAJOR, max(wx, wy));
 			input_report_abs(rmi4_data->input_dev,
 					ABS_MT_TOUCH_MINOR, min(wx, wy));
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_PRESSURE, z);
 		}
 	} else if (!prev_status && finger_status) { //finger press
 		if(y < 985) {
@@ -979,6 +985,8 @@ static inline void synaptics_rmi4_f11_abs_report_hn(struct synaptics_rmi4_data *
 					ABS_MT_TOUCH_MAJOR, max(wx, wy));
 			input_report_abs(rmi4_data->input_dev,
 					ABS_MT_TOUCH_MINOR, min(wx, wy));
+			input_report_abs(rmi4_data->input_dev,
+					ABS_MT_PRESSURE, z);	
 		} else {
 			hn_active = true;
 			hn_time = ktime_to_ms(ktime_get());
@@ -1243,11 +1251,6 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
 			fhandler->full_addr.ctrl_base,
 			control,
 			sizeof(control));
-	retval = synaptics_rmi4_i2c_read(rmi4_data,
-			fhandler->full_addr.ctrl_base,
-			control,
-			sizeof(control));
-	printk("ngxson: rmi4 ctrl0 = %x\n", control[0]);
 
 	fhandler->intr_reg_num = (intr_count + 7) / 8;
 	if (fhandler->intr_reg_num != 0)
@@ -1276,7 +1279,7 @@ static int synaptics_rmi4_alloc_fh(struct synaptics_rmi4_fn **fhandler,
 		return -ENOMEM;
 
 	if(isf11) {
-		data_addr  =
+		data_addr =
 			(rmi_fd->data_base_addr |
 			(page_number << 8));
 		ctrl_addr =
@@ -1742,6 +1745,9 @@ static int __devinit synaptics_rmi4_probe(struct i2c_client *client,
 	input_set_abs_params(rmi4_data->input_dev,
 			ABS_MT_TOUCH_MAJOR, 0,
 			MAX_ABS_MT_TOUCH_MAJOR, 0, 0);
+	input_set_abs_params(rmi4_data->input_dev,
+			ABS_MT_PRESSURE, 0,
+			0xFF, 0, 0);
 
 #ifdef TYPE_B_PROTOCOL
 	input_mt_init_slots(rmi4_data->input_dev,
@@ -2030,7 +2036,6 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 	struct synaptics_rmi4_data *rmi4_data =
 			container_of(h, struct synaptics_rmi4_data,
 			early_suspend);
-	unsigned char control[1];
 
 	//printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
 	scr_suspended = true;
@@ -2052,11 +2057,6 @@ static void synaptics_rmi4_early_suspend(struct early_suspend *h)
 			synaptics_rmi4_sensor_wake(rmi4_data);
 			rmi4_data->touch_stopped = false;
 		}
-		synaptics_rmi4_i2c_read(rmi4_data,
-			ctrl_addr,
-			control,
-			sizeof(control));
-		printk("ngxson: rmi4 ctrl0 = %x\n", control[0]);
 	} else {
 		//printk( "ngxson: debug synaptics_rmi4_early_suspend\n");
 		ngxson_touch_slept = true;
