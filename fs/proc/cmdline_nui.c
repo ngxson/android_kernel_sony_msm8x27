@@ -3,6 +3,7 @@
 #include <linux/proc_fs.h>
 #include <linux/string.h>
 #include <linux/vmalloc.h>
+#include <linux/init.h>
 #include <asm/uaccess.h>
 
 #define MAX_LEN       1024
@@ -19,6 +20,7 @@ static int __init proc_cmdline_nui_init(void)
     int ret = 0;
     info = (char *)vmalloc( MAX_LEN );
     memset( info, 0, MAX_LEN );
+    strcpy (info, saved_command_line);
     proc_entry = create_proc_entry( "cmdline", 0666, NULL );
 
     if (proc_entry == NULL)
@@ -33,7 +35,7 @@ static int __init proc_cmdline_nui_init(void)
         read_index = 0;
         proc_entry->read_proc = read_info;
         proc_entry->write_proc = write_info;
-        printk(KERN_INFO "ngxson: cmdline created.\n");
+        printk(KERN_INFO "ngxson: cmdline created = %s\n", info);
     }
 
     return ret;
