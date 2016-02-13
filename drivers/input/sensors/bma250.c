@@ -372,15 +372,9 @@ static void inline bma250_read_accel_xyz(struct bma250_data *bma250)
 		TOUCH_ESD_WORKAROUND(CY_FACE_UP);
 #endif
 /*FIH-MTD-PERIPHERAL-CH-ESD-00++]*/
-
-    timestamp = ktime_get_boottime();
     input_report_abs(bma250->input, ABS_X, bma250->value.x);
     input_report_abs(bma250->input, ABS_Y, bma250->value.y);
     input_report_abs(bma250->input, ABS_Z, bma250->value.z);
-    input_event(bma250->input, EV_SYN, SYN_TIME_SEC,
-		    ktime_to_timespec(timestamp).tv_sec);
-    input_event(bma250->input, EV_SYN, SYN_TIME_NSEC,
-		    ktime_to_timespec(timestamp).tv_nsec);
     input_sync(bma250->input);
 }
 
@@ -513,6 +507,11 @@ static int bma250_set_mode(struct i2c_client *client, unsigned char Mode)
 {
     struct bma250_data *bma250 = i2c_get_clientdata(client);
 
+	//power saving
+	//report time = 100ms
+	//current = 2.3uA
+	if(Mode == 88) Mode = 90;
+    
     if (client == NULL)
     {
         GSENSOR_DEBUG(LEVEL0, "NULL.");
@@ -663,11 +662,8 @@ static irqreturn_t bma250_irq_handler(int irq, void *dev_id)
 {
     struct bma250_data *bma250 = dev_id;
 
-	if(nui_report) { //decrease report rate
-		bma250->polling_times = 0;
-		schedule_delayed_work(&bma250->irq_work, 0);
-	}
-	nui_report = !nui_report;
+	bma250->polling_times = 0;
+	schedule_delayed_work(&bma250->irq_work, 0);
 
     return IRQ_HANDLED;
 }
@@ -978,6 +974,7 @@ static ssize_t bma250_mode_show(struct device *dev, struct device_attribute *att
 {
     struct bma250_data *bma250 = dev_get_drvdata(dev);
     unsigned char data = 0;
+    unsigned char dataa = 0;
 
     if (bma250_get_mode(bma250->client, &data) < 0)
         GSENSOR_DEBUG(LEVEL0, "Failed.");
