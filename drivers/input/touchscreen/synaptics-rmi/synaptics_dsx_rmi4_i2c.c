@@ -143,6 +143,7 @@ static unsigned int hn_two = KEY_HOMEPAGE;
 static unsigned int hn_thr = 580;
 static unsigned int hn_m = KEY_MENU;
 //static bool nui_enabled_irq = false;
+static bool block_gesture = false;
 //end
 
 static int synaptics_rmi4_i2c_read(struct synaptics_rmi4_data *rmi4_data,
@@ -264,7 +265,8 @@ static DECLARE_WORK(doubletap2wake_presspwr_work, doubletap2wake_presspwr);
 
 /* PowerKey trigger */
 static void inline doubletap2wake_pwrtrigger(void) {
-	schedule_work(&doubletap2wake_presspwr_work);
+	if(!block_gesture)
+		schedule_work(&doubletap2wake_presspwr_work);
 	return;
 }
 
@@ -2250,6 +2252,7 @@ module_param(hn_one, int, 0644);
 module_param(hn_two, int, 0644);
 module_param(hn_thr, int, 0644);
 module_param(hn_m, int, 0644);
+module_param(block_gesture, bool, 0644);
 
 module_init(synaptics_rmi4_init);
 module_exit(synaptics_rmi4_exit);
