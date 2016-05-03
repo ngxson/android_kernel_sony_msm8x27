@@ -146,7 +146,7 @@ static ssize_t kcal_show(struct device *dev, struct device_attribute *attr,
         return sprintf(buf, "%d %d %d\n", kcal_r, kcal_g, kcal_b);
 }
 
-static DEVICE_ATTR(kcal, 0644, kcal_show, kcal_store);
+static DEVICE_ATTR(kcal, 0666, kcal_show, kcal_store);
 
 int kcal_create_sysfs(struct msm_fb_data_type *mfd)
 {
