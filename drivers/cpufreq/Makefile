@@ -16,9 +16,9 @@ obj-$(CONFIG_CPU_FREQ_GOV_LIONHEART)	+= cpufreq_lionheart.o
 obj-$(CONFIG_CPU_FREQ_GOV_LULZACTIVE)	+= cpufreq_lulzactive.o
 obj-y	+= cpufreq_HYPER.o
 obj-y	+= cpufreq_intellimm.o
-#obj-y	+= cpufreq_ondemandX.o
+obj-y	+= cpufreq_savagedzen.o
 obj-y	+= cpufreq_intellidemand.o
-#obj-y	+= cpufreq_zzmoove.o
+obj-y	+= cpufreq_brazilianwax.o
 
 # CPUfreq cross-arch helpers
 obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
