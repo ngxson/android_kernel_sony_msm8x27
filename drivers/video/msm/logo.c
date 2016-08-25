@@ -270,6 +270,19 @@ void draw_nui_logo(int logo)
 	}
 }
 
+static void draw_anim_logo(char *filename)
+{
+	int ret = 0;
+	ret = fih_load_565rle_image(filename);
+	if (ret == 0) {
+		ret = fb_info->fbops->fb_pan_display(&fb_info->var, fb_info);
+		if (ret == 0) {
+			printk(KERN_INFO "[ngxson]%s: Drawing animate\n", __func__);
+			return;
+		}
+	}
+}
+
 int __init logo_init(void)
 {
 	int ret;
@@ -279,6 +292,16 @@ int __init logo_init(void)
 		printk(KERN_ERR "[ngxson]%s: Can not open fb, ret <%d>\n",
 				__func__, ret);
 	}
+	draw_anim_logo("/anim/a0.rle"); msleep(400);
+	draw_anim_logo("/anim/a1.rle"); msleep(200);
+	draw_anim_logo("/anim/a2.rle"); msleep(200);
+	draw_anim_logo("/anim/a3.rle"); msleep(200);
+	draw_anim_logo("/anim/a4.rle"); msleep(200);
+	draw_anim_logo("/anim/a5.rle"); msleep(200);
+	draw_anim_logo("/anim/a6.rle"); msleep(200);
+	draw_anim_logo("/anim/a7.rle"); msleep(200);
+	draw_anim_logo("/anim/a8.rle"); msleep(200);
+	draw_anim_logo("/anim/a9.rle"); msleep(200);
 	draw_nui_logo(0);
 	return 0;
 }
