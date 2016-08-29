@@ -293,15 +293,15 @@ int __init logo_init(void)
 				__func__, ret);
 	}
 	draw_anim_logo("/anim/a0.rle"); msleep(400);
-	draw_anim_logo("/anim/a1.rle"); msleep(200);
-	draw_anim_logo("/anim/a2.rle"); msleep(200);
-	draw_anim_logo("/anim/a3.rle"); msleep(200);
-	draw_anim_logo("/anim/a4.rle"); msleep(200);
-	draw_anim_logo("/anim/a5.rle"); msleep(200);
-	draw_anim_logo("/anim/a6.rle"); msleep(200);
-	draw_anim_logo("/anim/a7.rle"); msleep(200);
-	draw_anim_logo("/anim/a8.rle"); msleep(200);
-	draw_anim_logo("/anim/a9.rle"); msleep(200);
+	draw_anim_logo("/anim/a1.rle"); msleep(100);
+	draw_anim_logo("/anim/a2.rle"); msleep(100);
+	draw_anim_logo("/anim/a3.rle"); msleep(100);
+	draw_anim_logo("/anim/a4.rle"); msleep(100);
+	draw_anim_logo("/anim/a5.rle"); msleep(100);
+	draw_anim_logo("/anim/a6.rle"); msleep(100);
+	draw_anim_logo("/anim/a7.rle"); msleep(100);
+	draw_anim_logo("/anim/a8.rle"); msleep(100);
+	draw_anim_logo("/anim/a9.rle"); msleep(100);
 	draw_nui_logo(0);
 	return 0;
 }
