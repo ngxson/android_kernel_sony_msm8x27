@@ -35,10 +35,6 @@
 #include <mach/subsystem_notif.h>
 #include <mach/subsystem_restart.h>
 
-#ifdef CONFIG_SEC_DEBUG
-#include <mach/sec_debug.h>
-#endif
-
 #include "smd_private.h"
 
 struct subsys_soc_restart_order {
@@ -86,7 +82,7 @@ struct subsys_device {
 	void *restart_order;
 };
 
-static int enable_ramdumps = 0;
+static int enable_ramdumps;
 module_param(enable_ramdumps, int, S_IRUGO | S_IWUSR);
 
 struct workqueue_struct *ssr_wq;
@@ -152,11 +148,12 @@ static struct subsys_soc_restart_order *restart_orders_8064_sglte2[] = {
 static struct subsys_soc_restart_order **restart_orders;
 static int n_restart_orders;
 
-static int restart_level = RESET_SUBSYS_INDEPENDENT;
+//static int restart_level = RESET_SUBSYS_INDEPENDENT;
+static int restart_level;
 
 int get_restart_level()
 {
-	return RESET_SUBSYS_INDEPENDENT;
+	return restart_level;
 }
 EXPORT_SYMBOL(get_restart_level);
 
@@ -174,8 +171,6 @@ static int restart_level_set(const char *val, struct kernel_param *kp)
 	ret = param_set_int(val, kp);
 	if (ret)
 		return ret;
-		
-	restart_level = RESET_SUBSYS_INDEPENDENT;
 
 	switch (restart_level) {
 	case RESET_SUBSYS_INDEPENDENT:
@@ -439,11 +434,6 @@ static void subsystem_restart_wq_func(struct work_struct *work)
 	 */
 	mutex_unlock(shutdown_lock);
 
-#ifdef CONFIG_SEC_DEBUG_SUBSYS
-	/* Print the modem crash details to klog */
-	print_modem_dump_info();
-#endif
-
 	/* Collect ram dumps for all subsystems in order here */
 	for_each_subsys_device(list, count, NULL, subsystem_ramdump);
 
@@ -598,20 +588,6 @@ static int ssr_panic_handler(struct notifier_block *this,
 			dev->desc->crash_shutdown(dev->desc);
 	return NOTIFY_DONE;
 }
-
-int ssr_panic_handler_for_sec_dbg(void)
-{
-	struct subsys_device *dev;
-
-	list_for_each_entry(dev, &subsystem_list, list) {
-		if (dev->desc->crash_shutdown)
-			dev->desc->crash_shutdown(dev->desc);
-		printk(KERN_EMERG "subsystem(%s) shtdown crash\n",
-				dev->desc->name);
-	}
-	return NOTIFY_DONE;
-}
-EXPORT_SYMBOL(ssr_panic_handler_for_sec_dbg);
 
 static struct notifier_block panic_nb = {
 	.notifier_call  = ssr_panic_handler,
