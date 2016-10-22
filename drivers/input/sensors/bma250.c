@@ -164,8 +164,6 @@
 #define BMA250_ACC_Z_MSB__MSK           0xFF
 #define BMA250_ACC_Z_MSB__REG           BMA250_Z_AXIS_MSB_REG
 
-static bool nui_report = true;
-
 struct bma250acc {
     s16 x,
         y,
@@ -325,7 +323,6 @@ static void inline bma250_read_accel_xyz(struct bma250_data *bma250)
     unsigned char buf[6];
     s16 raw[3], data[3];
     int i, j;
-    ktime_t timestamp;
 
     if (bma250_smbus_read_byte_block(bma250->client, BMA250_X_AXIS_LSB_REG, buf, sizeof(buf)) < 0)
     {
@@ -961,7 +958,6 @@ static ssize_t bma250_mode_show(struct device *dev, struct device_attribute *att
 {
     struct bma250_data *bma250 = dev_get_drvdata(dev);
     unsigned char data = 0;
-    unsigned char dataa = 0;
 
     if (bma250_get_mode(bma250->client, &data) < 0)
         GSENSOR_DEBUG(LEVEL0, "Failed.");
