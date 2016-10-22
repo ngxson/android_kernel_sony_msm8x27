@@ -76,10 +76,10 @@ static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
 	struct pmic8xxx_pwrkey *pwrkey = _pwrkey;
 
 	//printk("ngxson: pwr button release\n");
-	if(((ktime_to_ms(ktime_get()) - prev_time) > REBOOT_PWRKEY_DUR) && btn_pressed) {
+	/*if(((ktime_to_ms(ktime_get()) - prev_time) > REBOOT_PWRKEY_DUR) && btn_pressed) {
 		printk("ngxson: reboot now\n");
 		machine_restart(NULL);
-	}
+	}*/
 	btn_pressed = false;
 
 	if (pwrkey->press == false) {
